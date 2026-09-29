@@ -21,6 +21,9 @@ import teeMountain from '../assets/tee-mountain-black.png'
 import teeRenaissance from '../assets/tee-renaissance-black.png'
 import teeSheep from '../assets/tee-sheep-black.png'
 
+// navbar'dagi (New Arrivals, Men, Women, Kids, Sale) filtrlar shu teglar bo'yicha ishlaydi
+export type NavTag = 'new' | 'men' | 'women' | 'kids' | 'sale'
+
 export type Product = {
   id: number
   name: string
@@ -30,6 +33,7 @@ export type Product = {
   sizes: string[]
   colors: string[]
   image?: string
+  tags?: NavTag[]
 }
 
 export const categories = [
@@ -59,6 +63,7 @@ export const products: Product[] = [
     sizes: clothingSizes,
     colors: ['Black'],
     image: teeSheep,
+    tags: ['men', 'sale'],
   },
   {
     id: 10,
@@ -69,6 +74,7 @@ export const products: Product[] = [
     sizes: clothingSizes,
     colors: ['Black'],
     image: teeCanyon,
+    tags: ['men'],
   },
   {
     id: 11,
@@ -79,6 +85,7 @@ export const products: Product[] = [
     sizes: clothingSizes,
     colors: ['Black', 'White'],
     image: teeCoteDazur,
+    tags: ['men', 'new'],
   },
   {
     id: 12,
@@ -89,6 +96,7 @@ export const products: Product[] = [
     sizes: clothingSizes,
     colors: ['White'],
     image: teeCaucasus,
+    tags: ['women'],
   },
   {
     id: 13,
@@ -99,6 +107,7 @@ export const products: Product[] = [
     sizes: clothingSizes,
     colors: ['Black'],
     image: teeMountain,
+    tags: ['men'],
   },
   {
     id: 14,
@@ -109,6 +118,7 @@ export const products: Product[] = [
     sizes: clothingSizes,
     colors: ['Black'],
     image: teeRenaissance,
+    tags: ['women', 'new'],
   },
   {
     id: 15,
@@ -119,6 +129,7 @@ export const products: Product[] = [
     sizes: clothingSizes,
     colors: ['Black'],
     image: teeClassicCar,
+    tags: ['men'],
   },
   {
     id: 16,
@@ -129,6 +140,7 @@ export const products: Product[] = [
     sizes: ['One Size'],
     colors: ['Brown'],
     image: accPhoneCase,
+    tags: ['sale'],
   },
   {
     id: 17,
@@ -139,6 +151,7 @@ export const products: Product[] = [
     sizes: ['One Size'],
     colors: ['Navy'],
     image: accBackpack,
+    tags: ['new'],
   },
   {
     id: 18,
@@ -149,6 +162,7 @@ export const products: Product[] = [
     sizes: ['One Size'],
     colors: ['Black'],
     image: accPouch,
+    tags: ['sale'],
   },
   {
     id: 1,
@@ -159,6 +173,7 @@ export const products: Product[] = [
     sizes: clothingSizes,
     colors: ['Navy'],
     image: shortsNylon,
+    tags: ['men', 'sale'],
   },
   {
     id: 22,
@@ -169,6 +184,7 @@ export const products: Product[] = [
     sizes: clothingSizes,
     colors: ['Olive'],
     image: shortsCargo,
+    tags: ['men'],
   },
   {
     id: 2,
@@ -179,6 +195,7 @@ export const products: Product[] = [
     sizes: clothingSizes,
     colors: ['Olive'],
     image: pantsCargo,
+    tags: ['men'],
   },
   {
     id: 3,
@@ -189,6 +206,7 @@ export const products: Product[] = [
     sizes: clothingSizes,
     colors: ['White', 'Black', 'Grey'],
     image: teeDancersWhite,
+    tags: ['women', 'sale'],
   },
   {
     id: 4,
@@ -199,6 +217,7 @@ export const products: Product[] = [
     sizes: clothingSizes,
     colors: ['Brown'],
     image: jacketSuede,
+    tags: ['men'],
   },
   {
     id: 5,
@@ -209,6 +228,7 @@ export const products: Product[] = [
     sizes: clothingSizes,
     colors: ['Light Blue'],
     image: shirtLayered,
+    tags: ['men'],
   },
   {
     id: 6,
@@ -219,6 +239,7 @@ export const products: Product[] = [
     sizes: ['37', '38', '39', '40', '41', '42'],
     colors: ['Beige'],
     image: shoesSneakers,
+    tags: ['women'],
   },
   {
     id: 7,
@@ -229,6 +250,7 @@ export const products: Product[] = [
     sizes: ['S/M', 'L/XL'],
     colors: ['Taupe', 'Black'],
     image: dressKhimar,
+    tags: ['women'],
   },
   {
     id: 8,
@@ -239,6 +261,7 @@ export const products: Product[] = [
     sizes: clothingSizes,
     colors: ['Grey'],
     image: sweaterTurtleneck,
+    tags: ['women'],
   },
   {
     id: 21,
@@ -249,6 +272,7 @@ export const products: Product[] = [
     sizes: clothingSizes,
     colors: ['Taupe'],
     image: sweaterHalfZip,
+    tags: ['men', 'new'],
   },
   {
     id: 19,
@@ -259,6 +283,7 @@ export const products: Product[] = [
     sizes: clothingSizes,
     colors: ['Burgundy'],
     image: hoodieBurgundy,
+    tags: ['men', 'sale'],
   },
   {
     id: 20,
@@ -269,5 +294,6 @@ export const products: Product[] = [
     sizes: clothingSizes,
     colors: ['Navy'],
     image: hoodieNavy,
+    tags: ['women', 'new'],
   },
 ]

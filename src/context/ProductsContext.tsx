@@ -5,8 +5,11 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import type { Product } from '../data/products'
+import { products as defaultProducts, type Product } from '../data/products'
 import { loadProducts, saveProducts } from '../data/productStore'
+import { loadFromStorage, saveToStorage } from '../utils/storage'
+
+const NEXT_ID_KEY = 'stylehub-products-next-id'
 
 type ProductsContextValue = {
   products: Product[]
@@ -20,15 +23,26 @@ const ProductsContext = createContext<ProductsContextValue | null>(null)
 export function ProductsProvider({ children }: { children: ReactNode }) {
   const [products, setProducts] = useState<Product[]>(loadProducts)
 
+  // o'chirilgan mahsulotning ID'si qayta ishlatilmasligi uchun alohida, faqat o'sib boradigan hisoblagich
+  const [nextId, setNextId] = useState<number>(() =>
+    loadFromStorage<number>(
+      NEXT_ID_KEY,
+      Math.max(0, ...products.map((p) => p.id), ...defaultProducts.map((p) => p.id)) + 1,
+    ),
+  )
+
   useEffect(() => {
     saveProducts(products)
   }, [products])
 
+  useEffect(() => {
+    saveToStorage(NEXT_ID_KEY, nextId)
+  }, [nextId])
+
   const addProduct = (product: Omit<Product, 'id'>) => {
-    setProducts((prev) => {
-      const newId = prev.length > 0 ? Math.max(...prev.map((p) => p.id)) + 1 : 1
-      return [{ ...product, id: newId }, ...prev]
-    })
+    const id = nextId
+    setNextId((n) => n + 1)
+    setProducts((prev) => [{ ...product, id }, ...prev])
   }
 
   const updateProduct = (id: number, changes: Partial<Product>) => {

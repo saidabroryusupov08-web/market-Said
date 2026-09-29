@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react'
-import { SearchX } from 'lucide-react'
+import { SearchX, X } from 'lucide-react'
+import { useCatalogFilter } from '../../../context/CatalogFilterContext'
 import { useSearch } from '../../../context/SearchContext'
 import { categories, products as defaultProducts, type Product } from '../../../data/products'
 import { useProducts } from '../../../context/ProductsContext'
@@ -9,6 +10,14 @@ import QuickViewModal from './QuickViewModal'
 
 // admin qo'shgan mahsulotlar products.ts da yo'q
 const defaultIds = new Set(defaultProducts.map((p) => p.id))
+
+const tagLabels: Record<string, string> = {
+  new: 'New Arrivals',
+  men: 'Men',
+  women: 'Women',
+  kids: 'Kids',
+  sale: 'Sale',
+}
 
 const sortOptions = [
   { value: 'newest', label: 'Newest' },
@@ -25,11 +34,13 @@ function Products() {
 
   const { query, setQuery } = useSearch()
   const { products } = useProducts()
+  const { activeTag, setActiveTag } = useCatalogFilter()
   const search = query.trim().toLowerCase()
 
   const visibleProducts = useMemo(() => {
     const filtered = products.filter((product) => {
       if (category !== 'All' && product.category !== category) return false
+      if (activeTag && !product.tags?.includes(activeTag)) return false
       if (!search) return true
       return [product.name, product.category, product.description, ...product.colors]
         .join(' ')
@@ -49,7 +60,7 @@ function Products() {
       }
       return a.name.localeCompare(b.name)
     })
-  }, [products, category, sort, search])
+  }, [products, category, sort, search, activeTag])
 
   return (
     <section id="products" className="bg-white py-16 lg:py-20">
@@ -76,7 +87,7 @@ function Products() {
               key={item}
               type="button"
               onClick={() => setCategory(item)}
-              className={`rounded-md px-4 py-2 text-sm font-semibold transition ${
+              className={`rounded-md px-4 py-2 text-sm font-semibold transition select-none ${
                 category === item
                   ? 'bg-gray-950 text-white'
                   : 'bg-gray-100 text-gray-950 hover:bg-gray-200'
@@ -86,6 +97,23 @@ function Products() {
             </button>
           ))}
         </div>
+
+        {activeTag && (
+          <div className="mt-4 flex items-center gap-2">
+            <span className="text-sm text-gray-500">Filtered by:</span>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-950 py-1 pr-1.5 pl-3 text-xs font-semibold text-white">
+              {tagLabels[activeTag] ?? activeTag}
+              <button
+                type="button"
+                aria-label="Clear filter"
+                onClick={() => setActiveTag(null)}
+                className="rounded-full p-0.5 transition hover:bg-white/20"
+              >
+                <X className="size-3.5" />
+              </button>
+            </span>
+          </div>
+        )}
 
         {search && (
           <p className="mt-6 text-sm text-gray-500">
@@ -122,6 +150,7 @@ function Products() {
               onClick={() => {
                 setQuery('')
                 setCategory('All')
+                setActiveTag(null)
               }}
               className="mt-6 cursor-pointer rounded-md bg-gray-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-gray-800"
             >

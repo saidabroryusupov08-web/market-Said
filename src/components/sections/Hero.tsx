@@ -1,5 +1,9 @@
 import heroImg from '../../assets/hero-store.png'
 
+function scrollToProducts() {
+  document.getElementById('products')?.scrollIntoView({ behavior: 'smooth' })
+}
+
 function Hero() {
   return (
     <section className="py-16 lg:py-24">
@@ -16,12 +20,14 @@ function Hero() {
           <div className="mt-6 flex flex-wrap gap-4">
             <button
               type="button"
+              onClick={scrollToProducts}
               className="rounded-md bg-gray-950 px-[21.5px] py-[7.5px] font-semibold text-white transition hover:bg-gray-800"
             >
               Shop Now
             </button>
             <button
               type="button"
+              onClick={scrollToProducts}
               className="rounded-md border border-gray-200 bg-white px-[21.5px] py-[7.5px] font-semibold text-gray-950 transition hover:bg-gray-100"
             >
               View Catalog

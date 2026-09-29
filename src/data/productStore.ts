@@ -28,7 +28,7 @@ export function loadProducts(): Product[] {
   const saved = loadFromStorage<Product[] | null>(KEY, null)
   if (!Array.isArray(saved)) return defaultProducts
 
-  return saved.flatMap((raw) => {
+  const list = saved.flatMap((raw) => {
     const p = sanitize(raw)
     if (!p) return []
     const original = defaultProducts.find((d) => d.id === p.id)
@@ -37,6 +37,11 @@ export function loadProducts(): Product[] {
     }
     return [p]
   })
+
+  // eski (ID qayta ishlatilgan) test ma'lumotlaridan qolgan takrorlar bo'lsa,
+  // har bir ID uchun oxirgi yozuv qoldiriladi
+  const byId = new Map(list.map((p) => [p.id, p]))
+  return [...byId.values()]
 }
 
 export function saveProducts(list: Product[]) {

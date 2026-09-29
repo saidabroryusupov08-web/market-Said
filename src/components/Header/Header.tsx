@@ -1,10 +1,25 @@
-import { useState, type FormEvent } from 'react'
+import { useState, type FormEvent, type ReactNode } from 'react'
 import { Heart, History, Menu, Search, Settings, ShoppingBag, User, X } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useCart } from '../../context/CartContext'
+import { useCatalogFilter } from '../../context/CatalogFilterContext'
 import { useSearch } from '../../context/SearchContext'
 import { useWishlist } from '../../context/WishlistContext'
+import type { NavTag } from '../../data/products'
 import CartDrawer from './CartDrawer'
+import WishlistDrawer from './WishlistDrawer'
+
+function IconTooltip({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="group relative flex">
+      {children}
+      <span className="pointer-events-none absolute top-full left-1/2 z-50 mt-2 -translate-x-1/2 translate-y-1 rounded-md bg-gray-950 px-2 py-1 text-xs font-medium whitespace-nowrap text-white opacity-0 shadow-md transition duration-150 group-hover:translate-y-0 group-hover:opacity-100">
+        {label}
+        <span className="absolute -top-1 left-1/2 size-2 -translate-x-1/2 rotate-45 bg-gray-950" />
+      </span>
+    </div>
+  )
+}
 
 function CountBadge({ count }: { count: number }) {
   if (count === 0) return null
@@ -15,7 +30,17 @@ function CountBadge({ count }: { count: number }) {
   )
 }
 
-const navLinks = ['New Arrivals', 'Men', 'Women', 'Kids', 'Sale']
+const navLinks: { label: string; tag: NavTag }[] = [
+  { label: 'New Arrivals', tag: 'new' },
+  { label: 'Men', tag: 'men' },
+  { label: 'Women', tag: 'women' },
+  { label: 'Kids', tag: 'kids' },
+  { label: 'Sale', tag: 'sale' },
+]
+
+function scrollToProducts() {
+  document.getElementById('products')?.scrollIntoView({ behavior: 'smooth' })
+}
 
 function SearchInput({ onSubmit }: { onSubmit?: () => void }) {
   const { query, setQuery, history, addToHistory, removeFromHistory, clearHistory } =
@@ -118,7 +143,13 @@ function SearchInput({ onSubmit }: { onSubmit?: () => void }) {
 function Header() {
   const [menuOpen, setMenuOpen] = useState(false)
   const { count, openCart } = useCart()
-  const { count: likedCount, lastLikedAt } = useWishlist()
+  const { count: likedCount, lastLikedAt, openWishlist } = useWishlist()
+  const { setActiveTag } = useCatalogFilter()
+
+  const goToTag = (tag: NavTag) => {
+    setActiveTag(tag)
+    scrollToProducts()
+  }
 
   const iconBtn =
     'rounded-md p-2 text-gray-800 transition hover:bg-gray-100 hover:text-black'
@@ -141,12 +172,16 @@ function Header() {
 
           <ul className="hidden items-center gap-8 lg:flex">
             {navLinks.map((link) => (
-              <li key={link}>
+              <li key={link.label}>
                 <a
-                  href="#"
+                  href="#products"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    goToTag(link.tag)
+                  }}
                   className="whitespace-nowrap text-gray-900 transition hover:text-gray-500"
                 >
-                  {link}
+                  {link.label}
                 </a>
               </li>
             ))}
@@ -158,42 +193,54 @@ function Header() {
         </div>
 
         <div className="flex items-center gap-2 sm:gap-4">
-          <Link to="/admin" title="Admin">
-            <Settings size={20} />
-          </Link>
-          <Link to="/" aria-label="Account" className={iconBtn}>
-            <User className="size-5" />
-          </Link>
-          <button
-            type="button"
-            aria-label={`Wishlist (${likedCount})`}
-            className={`${iconBtn} relative`}
-          >
-            {/* key o'zgarganda animatsiya qaytadan boshlanadi */}
-            <Heart
-              key={lastLikedAt}
-              className={`size-5 transition-colors ${
-                likedCount > 0 ? 'fill-[#ff3040] text-[#ff3040]' : ''
-              } ${lastLikedAt ? 'animate-[heart-pop_600ms_ease-out]' : ''}`}
-            />
-            {likedCount > 0 && (
-              <span
-                key={likedCount}
-                className="absolute -top-0.5 -right-0.5 flex h-[18px] min-w-[18px] animate-[badge-pop_300ms_ease-out] items-center justify-center rounded-full bg-[#ff3040] px-1 text-[10px] font-bold text-white ring-2 ring-white"
-              >
-                {likedCount}
-              </span>
-            )}
-          </button>
-          <button
-            type="button"
-            aria-label="Cart"
-            className={`${iconBtn} relative`}
-            onClick={openCart}
-          >
-            <ShoppingBag className="size-5" />
-            <CountBadge count={count} />
-          </button>
+          <IconTooltip label="Admin panel">
+            <Link to="/admin" aria-label="Admin panel" className={iconBtn}>
+              <Settings className="size-5" />
+            </Link>
+          </IconTooltip>
+
+          <IconTooltip label="Account">
+            <Link to="/" aria-label="Account" className={iconBtn}>
+              <User className="size-5" />
+            </Link>
+          </IconTooltip>
+
+          <IconTooltip label={`Wishlist (${likedCount})`}>
+            <button
+              type="button"
+              aria-label={`Wishlist (${likedCount})`}
+              className={`${iconBtn} relative`}
+              onClick={openWishlist}
+            >
+              {/* key o'zgarganda animatsiya qaytadan boshlanadi */}
+              <Heart
+                key={lastLikedAt}
+                className={`size-5 transition-colors ${
+                  likedCount > 0 ? 'fill-[#ff3040] text-[#ff3040]' : ''
+                } ${lastLikedAt ? 'animate-[heart-pop_600ms_ease-out]' : ''}`}
+              />
+              {likedCount > 0 && (
+                <span
+                  key={likedCount}
+                  className="absolute -top-0.5 -right-0.5 flex h-[18px] min-w-[18px] animate-[badge-pop_300ms_ease-out] items-center justify-center rounded-full bg-[#ff3040] px-1 text-[10px] font-bold text-white ring-2 ring-white"
+                >
+                  {likedCount}
+                </span>
+              )}
+            </button>
+          </IconTooltip>
+
+          <IconTooltip label="Cart">
+            <button
+              type="button"
+              aria-label="Cart"
+              className={`${iconBtn} relative`}
+              onClick={openCart}
+            >
+              <ShoppingBag className="size-5" />
+              <CountBadge count={count} />
+            </button>
+          </IconTooltip>
         </div>
       </nav>
 
@@ -209,13 +256,17 @@ function Header() {
             </div>
             <ul className="flex flex-col">
               {navLinks.map((link) => (
-                <li key={link}>
+                <li key={link.label}>
                   <a
-                    href="#"
+                    href="#products"
                     className="block rounded-md px-2 py-2.5 text-gray-900 transition hover:bg-gray-100"
-                    onClick={() => setMenuOpen(false)}
+                    onClick={(e) => {
+                      e.preventDefault()
+                      goToTag(link.tag)
+                      setMenuOpen(false)
+                    }}
                   >
-                    {link}
+                    {link.label}
                   </a>
                 </li>
               ))}
@@ -225,6 +276,7 @@ function Header() {
       </div>
 
       <CartDrawer />
+      <WishlistDrawer />
     </header>
   )
 }

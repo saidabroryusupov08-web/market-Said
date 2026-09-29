@@ -20,6 +20,9 @@ type WishlistContextValue = {
   lastLikedAt: number
   isLiked: (id: number) => boolean
   toggleLike: (id: number) => void
+  isOpen: boolean
+  openWishlist: () => void
+  closeWishlist: () => void
 }
 
 const WishlistContext = createContext<WishlistContextValue | null>(null)
@@ -39,6 +42,7 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
   }, [likedIds])
 
   const [lastLikedAt, setLastLikedAt] = useState(0)
+  const [isOpen, setIsOpen] = useState(false)
 
   const toggleLike = (id: number) => {
     if (!likedIds.includes(id)) setLastLikedAt(Date.now())
@@ -55,6 +59,9 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
         lastLikedAt,
         isLiked: (id) => likedIds.includes(id),
         toggleLike,
+        isOpen,
+        openWishlist: () => setIsOpen(true),
+        closeWishlist: () => setIsOpen(false),
       }}
     >
       {children}

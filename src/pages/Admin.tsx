@@ -21,11 +21,11 @@ import { loadFromStorage, saveToStorage } from '../utils/storage'
 
 // navbar'dagi New Arrivals/Men/Women/Kids/Sale filtrlari shu teglar bo'yicha ishlaydi
 const NAV_TAG_OPTIONS: { value: NavTag; label: string }[] = [
-  { value: 'new', label: 'New' },
-  { value: 'men', label: 'Men' },
-  { value: 'women', label: 'Women' },
-  { value: 'kids', label: 'Kids' },
-  { value: 'sale', label: 'Sale' },
+  { value: 'new', label: 'Новинки' },
+  { value: 'men', label: 'Мужчинам' },
+  { value: 'women', label: 'Женщинам' },
+  { value: 'kids', label: 'Детям' },
+  { value: 'sale', label: 'Скидки' },
 ]
 
 function TagsSelect({ value, onChange }: { value: NavTag[]; onChange: (tags: NavTag[]) => void }) {
@@ -77,7 +77,7 @@ function ConfirmDialog({
       >
         <div className="mb-3 flex items-center gap-2.5 text-red-600">
           <AlertTriangle className="size-5" />
-          <h3 className="text-base font-semibold text-gray-950">Tasdiqlash</h3>
+          <h3 className="text-base font-semibold text-gray-950">Подтверждение</h3>
         </div>
         <p className="mb-5 text-sm text-gray-600">{message}</p>
         <div className="flex justify-end gap-2">
@@ -86,14 +86,14 @@ function ConfirmDialog({
             onClick={onCancel}
             className="rounded-md border border-gray-300 px-3.5 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-100"
           >
-            Bekor qilish
+            Отмена
           </button>
           <button
             type="button"
             onClick={onConfirm}
             className="rounded-md bg-red-600 px-3.5 py-1.5 text-sm font-semibold text-white transition hover:bg-red-700"
           >
-            Ha, o'chirish
+            Да, удалить
           </button>
         </div>
       </div>
@@ -128,7 +128,7 @@ function readImage(file: File, maxSize = 600): Promise<string> {
     }
     img.onerror = () => {
       URL.revokeObjectURL(url)
-      reject(new Error("Rasmni o'qib bo'lmadi"))
+      reject(new Error('Не удалось загрузить изображение'))
     }
     img.src = url
   })
@@ -166,7 +166,7 @@ function AddProductForm({ onDone }: { onDone: () => void }) {
     try {
       set('image', await readImage(file))
     } catch {
-      showToast("Rasmni o'qib bo'lmadi")
+      showToast('Не удалось загрузить изображение')
     }
   }
 
@@ -175,10 +175,10 @@ function AddProductForm({ onDone }: { onDone: () => void }) {
     const price = Number(form.price)
     const sizes = splitList(form.sizes)
     const colors = splitList(form.colors)
-    if (!form.name.trim()) return showToast('Nomini yozing')
-    if (!(price > 0)) return showToast("To'g'ri narx yozing")
+    if (!form.name.trim()) return showToast('Введите название')
+    if (!(price > 0)) return showToast('Введите корректную цену')
     if (sizes.length === 0 || colors.length === 0)
-      return showToast("Kamida bitta o'lcham va rang yozing")
+      return showToast('Укажите хотя бы один размер и цвет')
 
     addProduct({
       name: form.name.trim(),
@@ -199,10 +199,10 @@ function AddProductForm({ onDone }: { onDone: () => void }) {
   return (
     <form onSubmit={submit} className="p-5 sm:p-6">
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-base font-semibold text-gray-950">Yangi mahsulot qo'shish</h2>
+        <h2 className="text-base font-semibold text-gray-950">Добавить новый товар</h2>
         <button
           type="button"
-          aria-label="Yopish"
+          aria-label="Закрыть"
           onClick={onDone}
           className="rounded-full p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
         >
@@ -212,24 +212,24 @@ function AddProductForm({ onDone }: { onDone: () => void }) {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="sm:col-span-2">
-          <label className={labelClass}>Nomi</label>
+          <label className={labelClass}>Название</label>
           <input
             className={inputClass}
-            placeholder="Masalan: Classic White T-Shirt"
+            placeholder="Например: Классическая белая футболка"
             value={form.name}
             onChange={(e) => set('name', e.target.value)}
           />
         </div>
 
         <div>
-          <label className={labelClass}>Kategoriya</label>
+          <label className={labelClass}>Категория</label>
           <select
             className={inputClass}
             value={form.category}
             onChange={(e) => set('category', e.target.value)}
           >
             {categories
-              .filter((c) => c !== 'All')
+              .filter((c) => c !== 'Все')
               .map((c) => (
                 <option key={c}>{c}</option>
               ))}
@@ -237,7 +237,7 @@ function AddProductForm({ onDone }: { onDone: () => void }) {
         </div>
 
         <div>
-          <label className={labelClass}>Narxi ($)</label>
+          <label className={labelClass}>Цена ($)</label>
           <input
             type="number"
             step="0.01"
@@ -250,7 +250,7 @@ function AddProductForm({ onDone }: { onDone: () => void }) {
         </div>
 
         <div>
-          <label className={labelClass}>O'lchamlar</label>
+          <label className={labelClass}>Размеры</label>
           <input
             className={inputClass}
             placeholder="XS, S, M, L"
@@ -260,28 +260,28 @@ function AddProductForm({ onDone }: { onDone: () => void }) {
         </div>
 
         <div>
-          <label className={labelClass}>Ranglar</label>
+          <label className={labelClass}>Цвета</label>
           <input
             className={inputClass}
-            placeholder="Black, White"
+            placeholder="Чёрный, Белый"
             value={form.colors}
             onChange={(e) => set('colors', e.target.value)}
           />
         </div>
 
         <div className="sm:col-span-2 lg:col-span-4">
-          <label className={labelClass}>Tavsif</label>
+          <label className={labelClass}>Описание</label>
           <textarea
             className={inputClass}
             rows={2}
-            placeholder="Mahsulot haqida qisqacha"
+            placeholder="Краткое описание товара"
             value={form.description}
             onChange={(e) => set('description', e.target.value)}
           />
         </div>
 
         <div className="sm:col-span-2 lg:col-span-4">
-          <label className={labelClass}>Yorliqlar (navbar filtrlari uchun, ixtiyoriy)</label>
+          <label className={labelClass}>Теги (для фильтров навбара, необязательно)</label>
           <TagsSelect value={tags} onChange={setTags} />
         </div>
       </div>
@@ -290,14 +290,14 @@ function AddProductForm({ onDone }: { onDone: () => void }) {
         <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center">
           <input
             className={`${inputClass} flex-1`}
-            placeholder="Rasm URL (ixtiyoriy)"
+            placeholder="URL изображения (необязательно)"
             value={form.image.startsWith('data:') ? '' : form.image}
             onChange={(e) => set('image', e.target.value)}
           />
-          <span className="text-center text-xs text-gray-400 sm:px-1">yoki</span>
+          <span className="text-center text-xs text-gray-400 sm:px-1">или</span>
           <label className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-gray-300 px-3 py-2 text-sm text-gray-500 transition hover:border-gray-400 hover:text-gray-700">
             <ImageIcon className="size-4" />
-            Fayl tanlash
+            Выбрать файл
             <input
               key={fileKey}
               type="file"
@@ -313,7 +313,7 @@ function AddProductForm({ onDone }: { onDone: () => void }) {
             <img src={form.image} alt="" className="size-full object-cover" />
             <button
               type="button"
-              aria-label="Rasmni olib tashlash"
+              aria-label="Удалить изображение"
               onClick={() => set('image', '')}
               className="absolute top-0.5 right-0.5 rounded-full bg-white/90 p-0.5 text-gray-600 hover:text-black"
             >
@@ -327,7 +327,7 @@ function AddProductForm({ onDone }: { onDone: () => void }) {
           className="flex items-center justify-center gap-1.5 rounded-lg bg-gray-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-gray-800"
         >
           <Plus className="size-4" />
-          Qo'shish
+          Добавить
         </button>
       </div>
     </form>
@@ -375,16 +375,16 @@ function AdminProductCard({ product }: { product: Product }) {
     try {
       set('image', await readImage(file))
     } catch {
-      showToast("Rasmni o'qib bo'lmadi")
+      showToast('Не удалось загрузить изображение')
     }
   }
 
   function save() {
     const price = Number(form.price)
     const colors = splitList(form.colors)
-    if (!form.name.trim()) return showToast('Nomini yozing')
-    if (!(price > 0)) return showToast("To'g'ri narx yozing")
-    if (colors.length === 0) return showToast("Kamida bitta rang yozing")
+    if (!form.name.trim()) return showToast('Введите название')
+    if (!(price > 0)) return showToast('Введите корректную цену')
+    if (colors.length === 0) return showToast('Укажите хотя бы один цвет')
 
     updateProduct(product.id, {
       name: form.name.trim(),
@@ -417,7 +417,7 @@ function AdminProductCard({ product }: { product: Product }) {
             <>
               <button
                 type="button"
-                aria-label="Saqlash"
+                aria-label="Сохранить"
                 onClick={save}
                 className={`${iconBtn} text-gray-950`}
               >
@@ -425,7 +425,7 @@ function AdminProductCard({ product }: { product: Product }) {
               </button>
               <button
                 type="button"
-                aria-label="Bekor qilish"
+                aria-label="Отмена"
                 onClick={() => setIsEditing(false)}
                 className={`${iconBtn} text-gray-500`}
               >
@@ -436,7 +436,7 @@ function AdminProductCard({ product }: { product: Product }) {
             <>
               <button
                 type="button"
-                aria-label="Tahrirlash"
+                aria-label="Редактировать"
                 onClick={startEdit}
                 className={`${iconBtn} text-gray-700 lg:opacity-0 lg:group-hover:opacity-100`}
               >
@@ -444,7 +444,7 @@ function AdminProductCard({ product }: { product: Product }) {
               </button>
               <button
                 type="button"
-                aria-label="O'chirish"
+                aria-label="Удалить"
                 onClick={() => setConfirmDelete(true)}
                 className={`${iconBtn} text-red-600 lg:opacity-0 lg:group-hover:opacity-100`}
               >
@@ -456,7 +456,7 @@ function AdminProductCard({ product }: { product: Product }) {
 
         {confirmDelete && (
           <ConfirmDialog
-            message={`"${product.name}" o'chirilsinmi? Bu amalni ortga qaytarib bo'lmaydi.`}
+            message={`Удалить «${product.name}»? Это действие нельзя отменить.`}
             onConfirm={() => {
               deleteProduct(product.id)
               setConfirmDelete(false)
@@ -468,7 +468,7 @@ function AdminProductCard({ product }: { product: Product }) {
         {isEditing && (
           <label className="absolute inset-x-3 bottom-3 flex cursor-pointer items-center justify-center gap-1.5 rounded-md bg-white/95 py-1.5 text-xs font-medium text-gray-700 shadow-md backdrop-blur-sm hover:bg-white">
             <ImageIcon className="size-3.5" />
-            Rasm almashtirish
+            Заменить изображение
             <input
               key={fileKey}
               type="file"
@@ -488,7 +488,7 @@ function AdminProductCard({ product }: { product: Product }) {
           <div className="space-y-2.5">
             <input
               className={inputClass}
-              placeholder="Nomi"
+              placeholder="Название"
               value={form.name}
               onChange={(e) => set('name', e.target.value)}
             />
@@ -499,7 +499,7 @@ function AdminProductCard({ product }: { product: Product }) {
                 onChange={(e) => set('category', e.target.value)}
               >
                 {categories
-                  .filter((c) => c !== 'All')
+                  .filter((c) => c !== 'Все')
                   .map((c) => (
                     <option key={c}>{c}</option>
                   ))}
@@ -509,20 +509,20 @@ function AdminProductCard({ product }: { product: Product }) {
                 step="0.01"
                 min="0"
                 className={`${inputClass} w-24 shrink-0`}
-                placeholder="Narxi"
+                placeholder="Цена"
                 value={form.price}
                 onChange={(e) => set('price', e.target.value)}
               />
             </div>
             <input
               className={inputClass}
-              placeholder="Ranglar: Black, White"
+              placeholder="Цвета: Чёрный, Белый"
               value={form.colors}
               onChange={(e) => set('colors', e.target.value)}
             />
             <input
               className={inputClass}
-              placeholder="Rasm URL"
+              placeholder="URL изображения"
               value={form.image.startsWith('data:') ? '' : form.image}
               onChange={(e) => set('image', e.target.value)}
             />
@@ -557,7 +557,7 @@ function AddProductTile({ onClick }: { onClick: () => void }) {
       <span className="flex size-12 items-center justify-center rounded-full bg-white shadow-sm transition group-hover:scale-110">
         <Plus className="size-5" />
       </span>
-      <span className="text-sm font-medium">Yangi mahsulot</span>
+      <span className="text-sm font-medium">Новый товар</span>
     </button>
   )
 }
@@ -626,7 +626,7 @@ function PasswordField({
       />
       <button
         type="button"
-        aria-label={visible ? "Parolni yashirish" : "Parolni ko'rsatish"}
+        aria-label={visible ? 'Скрыть пароль' : 'Показать пароль'}
         onClick={() => setVisible((v) => !v)}
         className="absolute top-1/2 right-2.5 -translate-y-1/2 text-gray-400 transition hover:text-gray-700"
       >
@@ -653,14 +653,14 @@ function PasswordTypeSelect({
   return (
     <div className="grid grid-cols-2 gap-2">
       <button type="button" onClick={() => onChange('text')} className={optionClass(value === 'text')}>
-        Harf/belgi (a-z, !-_)
+        Буквы/символы (a-z, !-_)
       </button>
       <button
         type="button"
         onClick={() => onChange('number')}
         className={optionClass(value === 'number')}
       >
-        Raqamlar (0-9)
+        Цифры (0-9)
       </button>
     </div>
   )
@@ -678,16 +678,16 @@ function usePasswordForm(onValid: (password: StoredPassword) => void) {
   function submit(e: FormEvent) {
     e.preventDefault()
     if (type === 'number' && password.length !== 4)
-      return setError("Raqamli parol aynan 4 ta raqamdan iborat bo'lishi kerak")
+      return setError('Цифровой пароль должен состоять ровно из 4 цифр')
     if (type === 'text' && password.length < 4)
-      return setError("Parol kamida 4 ta belgidan iborat bo'lsin")
+      return setError('Пароль должен содержать не менее 4 символов')
     if (!matchesType(password, type))
       return setError(
         type === 'number'
-          ? "Parol faqat raqamlardan (0-9) iborat bo'lishi kerak"
-          : "Parolda raqam bo'lmasligi kerak (harf va belgilardan foydalaning)",
+          ? 'Пароль должен состоять только из цифр (0-9)'
+          : 'В пароле не должно быть цифр (используйте буквы и символы)',
       )
-    if (password !== confirm) return setError('Parollar mos kelmadi')
+    if (password !== confirm) return setError('Пароли не совпадают')
     onValid({ value: password, type })
   }
 
@@ -728,34 +728,34 @@ function AdminSetup({ onDone }: { onDone: (password: StoredPassword) => void }) 
           <span className="mb-3 flex size-12 items-center justify-center rounded-full bg-gray-100">
             <Lock className="size-5 text-gray-700" />
           </span>
-          <h1 className="text-lg font-semibold text-gray-950">Admin parolini o'rnating</h1>
+          <h1 className="text-lg font-semibold text-gray-950">Установите пароль администратора</h1>
           <p className="mt-1 text-sm text-gray-500">
-            Bu ekran faqat birinchi marta kirishda chiqadi
+            Этот экран появляется только при первом входе
           </p>
         </div>
 
-        <label className={labelClass}>Parol turi</label>
+        <label className={labelClass}>Тип пароля</label>
         <div className="mb-3">
           <PasswordTypeSelect value={form.type} onChange={form.setType} />
         </div>
 
-        <label className={labelClass}>Yangi parol</label>
+        <label className={labelClass}>Новый пароль</label>
         <div className="mb-3">
           <PasswordField
             autoFocus
             value={form.password}
             onChange={form.setPassword}
-            placeholder={form.type === 'number' ? 'Masalan: 2024' : 'Masalan: mening_parolim'}
+            placeholder={form.type === 'number' ? 'Например: 2024' : 'Например: мой_пароль'}
             error={!!form.error}
             maxLength={form.type === 'number' ? 4 : undefined}
           />
         </div>
 
-        <label className={labelClass}>Parolni tasdiqlang</label>
+        <label className={labelClass}>Подтвердите пароль</label>
         <PasswordField
           value={form.confirm}
           onChange={form.setConfirm}
-          placeholder="Qayta kiriting"
+          placeholder="Введите ещё раз"
           error={!!form.error}
           maxLength={form.type === 'number' ? 4 : undefined}
         />
@@ -766,7 +766,7 @@ function AdminSetup({ onDone }: { onDone: (password: StoredPassword) => void }) 
           type="submit"
           className="mt-4 w-full rounded-lg bg-gray-950 py-2 text-sm font-semibold text-white transition hover:bg-gray-800"
         >
-          Saqlash va kirish
+          Сохранить и войти
         </button>
       </form>
     </div>
@@ -803,8 +803,8 @@ function AdminLogin({
           <span className="mb-3 flex size-12 items-center justify-center rounded-full bg-gray-100">
             <Lock className="size-5 text-gray-700" />
           </span>
-          <h1 className="text-lg font-semibold text-gray-950">Admin panel</h1>
-          <p className="mt-1 text-sm text-gray-500">Davom etish uchun parolni kiriting</p>
+          <h1 className="text-lg font-semibold text-gray-950">Админ-панель</h1>
+          <p className="mt-1 text-sm text-gray-500">Введите пароль, чтобы продолжить</p>
         </div>
 
         <PasswordField
@@ -814,23 +814,23 @@ function AdminLogin({
             setPassword(v)
             setError(false)
           }}
-          placeholder="Parol"
+          placeholder="Пароль"
           error={error}
         />
-        {error && <p className="mt-2 text-xs text-red-600">Parol noto'g'ri</p>}
+        {error && <p className="mt-2 text-xs text-red-600">Неверный пароль</p>}
 
         <button
           type="submit"
           className="mt-4 w-full rounded-lg bg-gray-950 py-2 text-sm font-semibold text-white transition hover:bg-gray-800"
         >
-          Kirish
+          Войти
         </button>
 
         <Link
           to="/"
           className="mt-3 block text-center text-xs text-gray-400 transition hover:text-gray-700"
         >
-          Saytga qaytish
+          Вернуться на сайт
         </Link>
       </form>
     </div>
@@ -860,10 +860,10 @@ function ChangePasswordModal({
         className="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl"
       >
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-base font-semibold text-gray-950">Parolni o'zgartirish</h2>
+          <h2 className="text-base font-semibold text-gray-950">Изменить пароль</h2>
           <button
             type="button"
-            aria-label="Yopish"
+            aria-label="Закрыть"
             onClick={onClose}
             className="rounded-full p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
           >
@@ -871,28 +871,28 @@ function ChangePasswordModal({
           </button>
         </div>
 
-        <label className={labelClass}>Parol turi</label>
+        <label className={labelClass}>Тип пароля</label>
         <div className="mb-3">
           <PasswordTypeSelect value={form.type} onChange={form.setType} />
         </div>
 
-        <label className={labelClass}>Yangi parol</label>
+        <label className={labelClass}>Новый пароль</label>
         <div className="mb-3">
           <PasswordField
             autoFocus
             value={form.password}
             onChange={form.setPassword}
-            placeholder={form.type === 'number' ? 'Masalan: 2024' : 'Masalan: mening_parolim'}
+            placeholder={form.type === 'number' ? 'Например: 2024' : 'Например: мой_пароль'}
             error={!!form.error}
             maxLength={form.type === 'number' ? 4 : undefined}
           />
         </div>
 
-        <label className={labelClass}>Parolni tasdiqlang</label>
+        <label className={labelClass}>Подтвердите пароль</label>
         <PasswordField
           value={form.confirm}
           onChange={form.setConfirm}
-          placeholder="Qayta kiriting"
+          placeholder="Введите ещё раз"
           error={!!form.error}
           maxLength={form.type === 'number' ? 4 : undefined}
         />
@@ -903,7 +903,7 @@ function ChangePasswordModal({
           type="submit"
           className="mt-4 w-full rounded-lg bg-gray-950 py-2 text-sm font-semibold text-white transition hover:bg-gray-800"
         >
-          Saqlash
+          Сохранить
         </button>
       </form>
     </div>
@@ -934,7 +934,7 @@ function AdminDashboard({ onPasswordChanged }: { onPasswordChanged: () => void }
               className="inline-flex items-center gap-1.5 text-sm text-gray-500 transition hover:text-gray-950"
             >
               <ArrowLeft className="size-4" />
-              Saytga qaytish
+              Вернуться на сайт
             </Link>
             <button
               type="button"
@@ -942,14 +942,14 @@ function AdminDashboard({ onPasswordChanged }: { onPasswordChanged: () => void }
               className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-600 transition hover:bg-gray-100"
             >
               <KeyRound className="size-3.5" />
-              Parolni o'zgartirish
+              Изменить пароль
             </button>
           </div>
 
           <div className="mb-6 flex items-end justify-between">
             <div>
-              <h1 className="text-2xl font-semibold text-gray-950">Admin panel</h1>
-              <p className="mt-1 text-sm text-gray-500">{products.length} ta mahsulot</p>
+              <h1 className="text-2xl font-semibold text-gray-950">Админ-панель</h1>
+              <p className="mt-1 text-sm text-gray-500">Товаров: {products.length}</p>
             </div>
           </div>
 
@@ -980,7 +980,7 @@ function AdminDashboard({ onPasswordChanged }: { onPasswordChanged: () => void }
             onClose={() => setIsChangingPassword(false)}
             onSaved={() => {
               setIsChangingPassword(false)
-              showToast('Parol yangilandi')
+              showToast('Пароль обновлён')
               onPasswordChanged()
             }}
           />

@@ -39,7 +39,7 @@ function ProductCard({ product, onQuickView }: ProductCardProps) {
         <ProductImage product={product} />
         <button
           type="button"
-          aria-label={liked ? 'Remove from wishlist' : 'Add to wishlist'}
+          aria-label={liked ? 'Убрать из избранного' : 'Добавить в избранное'}
           aria-pressed={liked}
           onClick={toggleLike}
           className={`absolute top-3 right-3 flex size-9 cursor-pointer items-center justify-center rounded-full bg-white shadow-md transition duration-300 hover:scale-110 ${likeVisibility}`}
@@ -55,7 +55,7 @@ function ProductCard({ product, onQuickView }: ProductCardProps) {
           onClick={() => onQuickView(product)}
           className="absolute inset-x-4 bottom-4 cursor-pointer rounded-md bg-gray-600/80 py-2 text-sm font-semibold text-white backdrop-blur-sm transition duration-300 hover:bg-gray-700/90 lg:translate-y-4 lg:opacity-0 lg:group-hover:translate-y-0 lg:group-hover:opacity-100 lg:focus:translate-y-0 lg:focus:opacity-100"
         >
-          Quick View
+          Быстрый просмотр
         </button>
       </div>
 

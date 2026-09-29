@@ -52,3 +52,40 @@ export function YoutubeIcon(props: SVGProps<SVGSVGElement>) {
     </Icon>
   )
 }
+
+export function TelegramIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="m22 2-7 20-4-9-9-4z" />
+      <path d="M22 2 11 13" />
+    </Icon>
+  )
+}
+
+export function WhatsappIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M3 21l1.65-4.95A8 8 0 1 1 8.05 19.35z" />
+      <path d="M8.5 9.5c0 3.5 2.5 6 6 6 .5 0 1-.5 1-1v-1l-2-1-1 1a5.5 5.5 0 0 1-3-3l1-1-1-2h-1c-.5 0 -1 .5-1 1z" />
+    </Icon>
+  )
+}
+
+export function LinkedinIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" />
+      <rect width="4" height="12" x="2" y="9" />
+      <circle cx="4" cy="4" r="2" />
+    </Icon>
+  )
+}
+
+export function ThreadsIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M12 3c5 0 8 3 8 8v2c0 5-3 8-8 8s-8-3-8-8v-2c0-5 3-8 8-8z" />
+      <path d="M9 10c0-1.5 1-2.5 3-2.5s3 1.5 3 3c0 2-2 2.5-2 4.5a2 2 0 0 1-4 0" />
+    </Icon>
+  )
+}

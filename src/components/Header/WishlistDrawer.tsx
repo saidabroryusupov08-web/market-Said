@@ -37,7 +37,7 @@ function WishlistDrawer() {
 
       <aside
         role="dialog"
-        aria-label="Wishlist"
+        aria-label="Избранное"
         className={`absolute top-0 right-0 flex h-full w-full max-w-md flex-col bg-white shadow-2xl transition-transform duration-500 ease-in-out ${
           open ? 'translate-x-0' : 'translate-x-full'
         }`}
@@ -45,11 +45,11 @@ function WishlistDrawer() {
         <div className="flex items-center justify-between p-6">
           <h2 className="flex items-center gap-2 text-xl font-medium text-black">
             <Heart className="size-5" />
-            Wishlist ({count})
+            Избранное ({count})
           </h2>
           <button
             type="button"
-            aria-label="Close"
+            aria-label="Закрыть"
             className="rounded-md p-1 text-gray-700 transition hover:bg-gray-100 hover:text-black"
             onClick={onClose}
           >
@@ -60,14 +60,16 @@ function WishlistDrawer() {
         {likedProducts.length === 0 ? (
           <div className="flex flex-1 flex-col items-center justify-center px-6 pb-24 text-center">
             <Heart className="mb-4 size-16 text-gray-500" strokeWidth={1.75} />
-            <p className="text-lg text-black">Your wishlist is empty</p>
-            <p className="mt-1 text-gray-500">Tap the heart on a product to save it here</p>
+            <p className="text-lg text-black">Список избранного пуст</p>
+            <p className="mt-1 text-gray-500">
+              Нажмите на сердечко у товара, чтобы сохранить его здесь
+            </p>
             <button
               type="button"
               className="mt-6 rounded-md bg-gray-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-gray-800"
               onClick={onClose}
             >
-              Continue Shopping
+              Продолжить покупки
             </button>
           </div>
         ) : (
@@ -82,7 +84,7 @@ function WishlistDrawer() {
                     <p className="font-medium text-gray-950">{product.name}</p>
                     <button
                       type="button"
-                      aria-label="Remove from wishlist"
+                      aria-label="Убрать из избранного"
                       onClick={() => toggleLike(product.id)}
                       className="text-gray-400 transition hover:text-red-500"
                     >

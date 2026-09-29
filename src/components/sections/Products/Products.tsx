@@ -12,22 +12,22 @@ import QuickViewModal from './QuickViewModal'
 const defaultIds = new Set(defaultProducts.map((p) => p.id))
 
 const tagLabels: Record<string, string> = {
-  new: 'New Arrivals',
-  men: 'Men',
-  women: 'Women',
-  kids: 'Kids',
-  sale: 'Sale',
+  new: 'Новинки',
+  men: 'Мужчинам',
+  women: 'Женщинам',
+  kids: 'Детям',
+  sale: 'Скидки',
 }
 
 const sortOptions = [
-  { value: 'newest', label: 'Newest' },
-  { value: 'name', label: 'Name' },
-  { value: 'price-asc', label: 'Price: Low to High' },
-  { value: 'price-desc', label: 'Price: High to Low' },
+  { value: 'newest', label: 'Сначала новые' },
+  { value: 'name', label: 'По названию' },
+  { value: 'price-asc', label: 'Цена: по возрастанию' },
+  { value: 'price-desc', label: 'Цена: по убыванию' },
 ]
 
 function Products() {
-  const [category, setCategory] = useState('All')
+  const [category, setCategory] = useState('Все')
   const [sort, setSort] = useState('newest')
   const [quickView, setQuickView] = useState<Product | null>(null)
   const closeQuickView = useCallback(() => setQuickView(null), [])
@@ -39,7 +39,7 @@ function Products() {
 
   const visibleProducts = useMemo(() => {
     const filtered = products.filter((product) => {
-      if (category !== 'All' && product.category !== category) return false
+      if (category !== 'Все' && product.category !== category) return false
       if (activeTag && !product.tags?.includes(activeTag)) return false
       if (!search) return true
       return [product.name, product.category, product.description, ...product.colors]
@@ -67,13 +67,13 @@ function Products() {
       <div className="mx-auto w-[90%] lg:w-[70%]">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h2 className="text-2xl font-medium text-gray-950">Our Products</h2>
+            <h2 className="text-2xl font-medium text-gray-950">Наши товары</h2>
             <p className="mt-2 text-gray-500">
-              Discover our complete collection of premium apparel
+              Откройте для себя всю коллекцию premium-одежды
             </p>
           </div>
           <Select
-            ariaLabel="Sort by"
+            ariaLabel="Сортировка"
             value={sort}
             onChange={setSort}
             options={sortOptions}
@@ -100,12 +100,12 @@ function Products() {
 
         {activeTag && (
           <div className="mt-4 flex items-center gap-2">
-            <span className="text-sm text-gray-500">Filtered by:</span>
+            <span className="text-sm text-gray-500">Фильтр:</span>
             <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-950 py-1 pr-1.5 pl-3 text-xs font-semibold text-white">
               {tagLabels[activeTag] ?? activeTag}
               <button
                 type="button"
-                aria-label="Clear filter"
+                aria-label="Сбросить фильтр"
                 onClick={() => setActiveTag(null)}
                 className="rounded-full p-0.5 transition hover:bg-white/20"
               >
@@ -117,15 +117,15 @@ function Products() {
 
         {search && (
           <p className="mt-6 text-sm text-gray-500">
-            {visibleProducts.length} result{visibleProducts.length === 1 ? '' : 's'} for{' '}
+            Найдено: {visibleProducts.length} для{' '}
             <span className="font-semibold text-gray-950">"{query.trim()}"</span>
-            {category !== 'All' && <> in {category}</>}
+            {category !== 'Все' && <> в категории «{category}»</>}
             <button
               type="button"
               onClick={() => setQuery('')}
               className="ml-3 cursor-pointer font-semibold text-gray-950 underline-offset-2 hover:underline"
             >
-              Clear search
+              Очистить поиск
             </button>
           </p>
         )}
@@ -143,18 +143,18 @@ function Products() {
         ) : (
           <div className="mt-8 flex flex-col items-center rounded-xl border border-dashed border-gray-300 px-6 py-16 text-center">
             <SearchX className="mb-4 size-12 text-gray-400" strokeWidth={1.5} />
-            <p className="text-lg text-gray-950">No products found</p>
-            <p className="mt-1 text-gray-500">Try a different word or category</p>
+            <p className="text-lg text-gray-950">Товары не найдены</p>
+            <p className="mt-1 text-gray-500">Попробуйте другое слово или категорию</p>
             <button
               type="button"
               onClick={() => {
                 setQuery('')
-                setCategory('All')
+                setCategory('Все')
                 setActiveTag(null)
               }}
               className="mt-6 cursor-pointer rounded-md bg-gray-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-gray-800"
             >
-              Show all products
+              Показать все товары
             </button>
           </div>
         )}

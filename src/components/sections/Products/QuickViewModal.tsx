@@ -36,7 +36,7 @@ function QuickViewModal({ product, onClose }: QuickViewModalProps) {
       >
         <button
           type="button"
-          aria-label="Close"
+          aria-label="Закрыть"
           onClick={onClose}
           className="absolute top-3 right-3 z-10 rounded-md bg-white/80 p-1.5 text-gray-700 transition hover:bg-gray-100 hover:text-black"
         >

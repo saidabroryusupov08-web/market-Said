@@ -31,11 +31,11 @@ function CountBadge({ count }: { count: number }) {
 }
 
 const navLinks: { label: string; tag: NavTag }[] = [
-  { label: 'New Arrivals', tag: 'new' },
-  { label: 'Men', tag: 'men' },
-  { label: 'Women', tag: 'women' },
-  { label: 'Kids', tag: 'kids' },
-  { label: 'Sale', tag: 'sale' },
+  { label: 'Новинки', tag: 'new' },
+  { label: 'Мужчинам', tag: 'men' },
+  { label: 'Женщинам', tag: 'women' },
+  { label: 'Детям', tag: 'kids' },
+  { label: 'Скидки', tag: 'sale' },
 ]
 
 function scrollToProducts() {
@@ -80,15 +80,15 @@ function SearchInput({ onSubmit }: { onSubmit?: () => void }) {
           if (showHistory) setFocused(false)
           else setQuery('')
         }}
-        placeholder="Search products..."
-        aria-label="Search products"
+        placeholder="Поиск товаров..."
+        aria-label="Поиск товаров"
         autoComplete="off"
         className="h-[37px] w-full rounded-lg border border-transparent bg-gray-100 pr-9 pl-10 text-sm outline-none transition focus:border-gray-300 focus:bg-white focus:shadow-[0_0_0_3px_rgba(0,0,0,0.08)]"
       />
       {query && (
         <button
           type="button"
-          aria-label="Clear search"
+          aria-label="Очистить поиск"
           onClick={() => setQuery('')}
           className="absolute top-1/2 right-2 -translate-y-1/2 cursor-pointer rounded-full p-1 text-gray-400 transition hover:bg-gray-200 hover:text-gray-700"
         >
@@ -103,13 +103,13 @@ function SearchInput({ onSubmit }: { onSubmit?: () => void }) {
           className="absolute top-full right-0 left-0 z-50 mt-1.5 animate-[fade-in_100ms_ease-out] rounded-lg border border-gray-200 bg-white p-1 shadow-lg"
         >
           <div className="flex items-center justify-between px-2.5 pt-1.5 pb-1">
-            <span className="text-xs font-semibold text-gray-500">Recent searches</span>
+            <span className="text-xs font-semibold text-gray-500">Недавние запросы</span>
             <button
               type="button"
               onClick={clearHistory}
               className="cursor-pointer text-xs text-gray-500 transition hover:text-gray-950"
             >
-              Clear all
+              Очистить всё
             </button>
           </div>
           <ul>
@@ -125,7 +125,7 @@ function SearchInput({ onSubmit }: { onSubmit?: () => void }) {
                 </button>
                 <button
                   type="button"
-                  aria-label={`Remove ${term}`}
+                  aria-label={`Удалить ${term}`}
                   onClick={() => removeFromHistory(term)}
                   className="mr-1 cursor-pointer rounded-full p-1 text-gray-400 transition hover:bg-gray-200 hover:text-gray-700"
                 >
@@ -160,7 +160,7 @@ function Header() {
         <div className="flex items-center gap-2 lg:gap-0">
           <button
             type="button"
-            aria-label="Menu"
+            aria-label="Меню"
             className={`${iconBtn} -ml-2 lg:hidden`}
             onClick={() => setMenuOpen((open) => !open)}
           >
@@ -193,22 +193,22 @@ function Header() {
         </div>
 
         <div className="flex items-center gap-2 sm:gap-4">
-          <IconTooltip label="Admin panel">
-            <Link to="/admin" aria-label="Admin panel" className={iconBtn}>
+          <IconTooltip label="Админ-панель">
+            <Link to="/admin" aria-label="Админ-панель" className={iconBtn}>
               <Settings className="size-5" />
             </Link>
           </IconTooltip>
 
-          <IconTooltip label="Account">
-            <Link to="/" aria-label="Account" className={iconBtn}>
+          <IconTooltip label="Аккаунт">
+            <Link to="/" aria-label="Аккаунт" className={iconBtn}>
               <User className="size-5" />
             </Link>
           </IconTooltip>
 
-          <IconTooltip label={`Wishlist (${likedCount})`}>
+          <IconTooltip label={`Избранное (${likedCount})`}>
             <button
               type="button"
-              aria-label={`Wishlist (${likedCount})`}
+              aria-label={`Избранное (${likedCount})`}
               className={`${iconBtn} relative`}
               onClick={openWishlist}
             >
@@ -230,10 +230,10 @@ function Header() {
             </button>
           </IconTooltip>
 
-          <IconTooltip label="Cart">
+          <IconTooltip label="Корзина">
             <button
               type="button"
-              aria-label="Cart"
+              aria-label="Корзина"
               className={`${iconBtn} relative`}
               onClick={openCart}
             >

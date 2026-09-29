@@ -29,15 +29,15 @@ function ProductOptions({ product, onAdded }: ProductOptionsProps) {
     <div className="flex flex-col gap-2">
       <div className="grid grid-cols-2 gap-2">
         <Select
-          ariaLabel="Size"
-          placeholder="Size"
+          ariaLabel="Размер"
+          placeholder="Размер"
           value={size}
           onChange={setSize}
           options={product.sizes.map((s) => ({ value: s, label: s }))}
         />
         <Select
-          ariaLabel="Color"
-          placeholder="Color"
+          ariaLabel="Цвет"
+          placeholder="Цвет"
           value={color}
           onChange={setColor}
           options={product.colors.map((c) => ({ value: c, label: c }))}
@@ -47,15 +47,15 @@ function ProductOptions({ product, onAdded }: ProductOptionsProps) {
         type="button"
         disabled={!canAdd}
         onClick={handleAdd}
-        title={canAdd ? undefined : 'Select size and color'}
+        title={canAdd ? undefined : 'Выберите размер и цвет'}
         className="flex h-9 cursor-pointer items-center justify-center gap-2 rounded-md bg-gray-950 text-sm font-semibold text-white transition hover:bg-gray-800 disabled:bg-gray-500"
       >
         {added ? (
           <>
-            <Check className="size-4" /> Added
+            <Check className="size-4" /> Добавлено
           </>
         ) : (
-          'Add to Cart'
+          'Добавить в корзину'
         )}
       </button>
     </div>

@@ -1,0 +1,61 @@
+.admin {
+  padding: 50px;
+  font-family: Arial, sans-serif;
+  /* background: white; */
+  height: 100vh;
+}
+
+.admin h1 {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.admin a {
+  color: blue;
+  text-decoration: underline;
+}
+
+.admin form {
+  margin: 20px 0;
+}
+
+.admin input,
+.admin select,
+.admin textarea {
+  border: 1px solid #ccc;
+  /* border: 2px solid gray; */
+  padding: 4px;
+  margin-right: 5px;
+  margin-bottom: 5px;
+}
+
+.admin button {
+  /* border: 1px solid gray; */
+  /* background: #eee; */
+  padding: 4px 8px;
+  margin-right: 5px;
+  cursor: pointer;
+}
+
+/* .admin table { */
+  /* border: gray 2px solid; */
+  /* border-collapse: collapse; */
+/* }   */
+
+.admin th,
+.admin td {
+  border: 1px solid black;
+  padding: 5px;
+  text-align: left;
+}
+
+.admin th {
+  background: red;
+}
+
+.admin img {
+  width: 40px;
+  height: 40px;
+  /* object-fit: cover; */
+}

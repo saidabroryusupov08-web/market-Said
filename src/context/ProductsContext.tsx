@@ -1,71 +1,46 @@
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  type ReactNode,
-} from 'react'
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { fromRow, supabase, type ProductRow } from '../../shared/supabase'
 import { products as defaultProducts, type Product } from '../data/products'
-import { loadProducts, saveProducts } from '../data/productStore'
-import { loadFromStorage, saveToStorage } from '../utils/storage'
 
-const NEXT_ID_KEY = 'stylehub-products-next-id'
+// Mahsulotlar Supabase bazasidan o'qiladi (ularni admin panel boshqaradi).
+// Supabase sozlanmagan bo'lsa yoki bazaga ulanib bo'lmasa, standart ro'yxat ko'rsatiladi.
 
 type ProductsContextValue = {
   products: Product[]
-  addProduct: (product: Omit<Product, 'id'>) => void
-  updateProduct: (id: number, changes: Partial<Product>) => void
-  deleteProduct: (id: number) => void
-  // oxirgi o'zgarish brauzer xotirasiga sig'madi (odatda rasmlar ko'payib ketganda)
-  saveFailed: boolean
+  // true bo'lgunicha mahsulotlar hali kelmagan: savat va sevimlilar bu paytda tozalanmasligi kerak
+  loaded: boolean
 }
 
 const ProductsContext = createContext<ProductsContextValue | null>(null)
 
 export function ProductsProvider({ children }: { children: ReactNode }) {
-  const [products, setProducts] = useState<Product[]>(loadProducts)
-
-  // o'chirilgan mahsulotning ID'si qayta ishlatilmasligi uchun alohida, faqat o'sib boradigan hisoblagich
-  const [nextId, setNextId] = useState<number>(() =>
-    loadFromStorage<number>(
-      NEXT_ID_KEY,
-      Math.max(0, ...products.map((p) => p.id), ...defaultProducts.map((p) => p.id)) + 1,
-    ),
-  )
-
-  const [saveFailed, setSaveFailed] = useState(false)
+  const [products, setProducts] = useState<Product[]>(supabase ? [] : defaultProducts)
+  const [loaded, setLoaded] = useState(!supabase)
 
   useEffect(() => {
-    saveToStorage(NEXT_ID_KEY, nextId)
-  }, [nextId])
-
-  // saqlash o'zgarish paytida qilinadi: natijasi (sig'di/sig'madi) admin'ga ko'rsatiladi,
-  // aks holda xotira to'lganda yangi mahsulot refresh'dan keyin jimgina yo'qolardi
-  const commit = (next: Product[]) => {
-    setProducts(next)
-    setSaveFailed(!saveProducts(next))
-  }
-
-  const addProduct = (product: Omit<Product, 'id'>) => {
-    const id = nextId
-    setNextId((n) => n + 1)
-    commit([{ ...product, id }, ...products])
-  }
-
-  const updateProduct = (id: number, changes: Partial<Product>) => {
-    commit(products.map((p) => (p.id === id ? { ...p, ...changes } : p)))
-  }
-
-  const deleteProduct = (id: number) => {
-    commit(products.filter((p) => p.id !== id))
-  }
+    if (!supabase) return
+    let cancelled = false
+    supabase
+      .from('products')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .then(({ data, error }) => {
+        if (cancelled) return
+        if (error) {
+          console.error('Mahsulotlarni yuklab bo‘lmadi:', error.message)
+          setProducts(defaultProducts)
+        } else {
+          setProducts((data as ProductRow[]).map(fromRow))
+        }
+        setLoaded(true)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   return (
-    <ProductsContext.Provider
-      value={{ products, addProduct, updateProduct, deleteProduct, saveFailed }}
-    >
-      {children}
-    </ProductsContext.Provider>
+    <ProductsContext.Provider value={{ products, loaded }}>{children}</ProductsContext.Provider>
   )
 }
 

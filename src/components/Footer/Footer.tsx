@@ -9,7 +9,7 @@ import {
   WhatsappIcon,
   YoutubeIcon,
 } from './SocialIcons'
-import Logo from '../ui/Logo'
+import Logo from '../../../shared/Logo'
 import { useCart } from '../../context/CartContext'
 import { getClientInfo } from '../../utils/device'
 import { validateEmail } from '../../utils/email'

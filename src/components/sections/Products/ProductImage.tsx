@@ -1,15 +1,12 @@
 import { ImageIcon } from 'lucide-react'
+import { resolveImage } from '../../../../shared/images'
 import type { Product } from '../../../data/products'
 
 function ProductImage({ product }: { product: Product }) {
-  if (product.image) {
+  const src = resolveImage(product.image)
+  if (src) {
     return (
-      <img
-        src={product.image}
-        alt={product.name}
-        loading="lazy"
-        className="size-full object-cover"
-      />
+      <img src={src} alt={product.name} loading="lazy" className="size-full object-cover" />
     )
   }
 

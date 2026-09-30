@@ -1,7 +1,7 @@
 // Vercel serverless funksiyasi: footer'dagi obuna formasi shu yerga yuboradi.
 // Xabar ikki joyga ketadi:
 //   1) Supabase bazasi -> admin paneldagi "Сообщения" bo'limida ko'rinadi
-//      (env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+//      (env: VITE_SUPABASE_URL yoki SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 //   2) Telegram bot -> telefonga bildirishnoma (env: TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID)
 // Qaysi biri sozlangan bo'lsa, o'sha ishlaydi. Kalitlar faqat serverda turadi,
 // brauzerga ham, GitHub'ga ham chiqmaydi.
@@ -118,7 +118,8 @@ export function buildMessage(p: SubscribePayload, now = new Date()): string {
 export async function POST(request: Request): Promise<Response> {
   const token = process.env.TELEGRAM_BOT_TOKEN
   const chatId = process.env.TELEGRAM_CHAT_ID
-  const supabaseUrl = process.env.SUPABASE_URL
+  // manzil ochiq, shuning uchun do'kon bilan bir xil VITE_SUPABASE_URL ham ishlaydi
+  const supabaseUrl = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   const hasTelegram = !!(token && chatId)
   const hasSupabase = !!(supabaseUrl && supabaseKey)

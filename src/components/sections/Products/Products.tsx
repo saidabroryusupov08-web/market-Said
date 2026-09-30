@@ -2,23 +2,16 @@ import { useCallback, useMemo, useState } from 'react'
 import { SearchX, X } from 'lucide-react'
 import { useCatalogFilter } from '../../../context/CatalogFilterContext'
 import { useSearch } from '../../../context/SearchContext'
-import { categories, products as defaultProducts, type Product } from '../../../data/products'
+import { categories, NAV_TAGS, type Product } from '../../../data/products'
 import { useProducts } from '../../../context/ProductsContext'
 import { minPrice } from '../../../utils/price'
 import Select from '../../ui/Select'
 import ProductCard from './ProductCard'
 import QuickViewModal from './QuickViewModal'
 
-// admin qo'shgan mahsulotlar products.ts da yo'q
-const defaultIds = new Set(defaultProducts.map((p) => p.id))
-
-const tagLabels: Record<string, string> = {
-  new: 'Новинки',
-  men: 'Мужчинам',
-  women: 'Женщинам',
-  kids: 'Детям',
-  sale: 'Скидки',
-}
+const tagLabels: Record<string, string> = Object.fromEntries(
+  NAV_TAGS.map((tag) => [tag.value, tag.label]),
+)
 
 const sortOptions = [
   { value: 'newest', label: 'Сначала новые' },
@@ -34,7 +27,7 @@ function Products() {
   const closeQuickView = useCallback(() => setQuickView(null), [])
 
   const { query, setQuery } = useSearch()
-  const { products } = useProducts()
+  const { products, loaded } = useProducts()
   const { activeTag, setActiveTag } = useCatalogFilter()
   const search = query.trim().toLowerCase()
 
@@ -54,11 +47,9 @@ function Products() {
       if (sort === 'price-asc') return minPrice(a) - minPrice(b)
       if (sort === 'price-desc') return minPrice(b) - minPrice(a)
       if (sort === 'newest') {
-        // yangi qo'shilganlar tepada (eng oxirgisi birinchi), qolganlari nom bo'yicha
-        const aNew = !defaultIds.has(a.id)
-        const bNew = !defaultIds.has(b.id)
-        if (aNew && bNew) return b.id - a.id
-        if (aNew !== bNew) return aNew ? -1 : 1
+        // admin eng oxirgi qo'shgani tepada; bir vaqtda qo'shilganlar nom bo'yicha
+        const diff = (b.createdAt ?? '').localeCompare(a.createdAt ?? '')
+        if (diff !== 0) return diff
       }
       return a.name.localeCompare(b.name)
     })
@@ -132,7 +123,9 @@ function Products() {
           </p>
         )}
 
-        {visibleProducts.length > 0 ? (
+        {!loaded ? (
+          <p className="mt-8 py-16 text-center text-gray-400">Загрузка товаров...</p>
+        ) : visibleProducts.length > 0 ? (
           <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {visibleProducts.map((product) => (
               <ProductCard

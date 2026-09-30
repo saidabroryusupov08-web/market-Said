@@ -9,7 +9,6 @@ import {
 } from 'react'
 import { useProducts } from './ProductsContext'
 import type { Product } from '../data/products'
-import { loadProducts } from '../data/productStore'
 import { getPrice } from '../utils/price'
 import { loadFromStorage, saveToStorage } from '../utils/storage'
 
@@ -23,24 +22,28 @@ type StoredCartItem = {
   quantity: number
 }
 
-// narx saqlanmaydi, har safar mahsulot va o'lchamdan hisoblanadi
-type CartEntry = Omit<CartItem, 'price'>
+// narx va mahsulot saqlanmaydi, har safar bazadan kelgan ro'yxatdan olinadi
+type CartEntry = StoredCartItem & { key: string }
 
+const makeKey = (productId: number, size: string, color: string) =>
+  `${productId}-${size}-${color}`
+
+// mahsulotlar hali bazadan kelmagan bo'lishi mumkin, shuning uchun bu yerda
+// faqat tuzilishi tekshiriladi; o'chirilgan mahsulotlar keyinroq (items'da) chiqarib tashlanadi
 function loadCart(): CartEntry[] {
   const saved = loadFromStorage<unknown>(STORAGE_KEY, [])
   if (!Array.isArray(saved)) return []
-  return saved.flatMap((item: StoredCartItem) => {
-    const product = loadProducts().find((p) => p.id === item?.productId)
-    if (!product || !(item.quantity > 0)) return []
-    return [
-      {
-        key: `${product.id}-${item.size}-${item.color}`,
-        product,
-        size: item.size,
-        color: item.color,
-        quantity: item.quantity,
-      },
-    ]
+  return saved.flatMap((item: Partial<StoredCartItem> | null) => {
+    if (
+      !item ||
+      typeof item.productId !== 'number' ||
+      typeof item.size !== 'string' ||
+      typeof item.color !== 'string' ||
+      !(Number(item.quantity) > 0)
+    )
+      return []
+    const { productId, size, color } = item
+    return [{ key: makeKey(productId, size, color), productId, size, color, quantity: Number(item.quantity) }]
   })
 }
 
@@ -70,19 +73,21 @@ const CartContext = createContext<CartContextValue | null>(null)
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [storedItems, setItems] = useState<CartEntry[]>(loadCart)
-  const { products } = useProducts()
+  const { products, loaded } = useProducts()
 
   // admin narxni o'zgartirsa yoki mahsulotni o'chirsa, savat darhol yangilanadi
   const items = useMemo(
     () =>
-      storedItems.flatMap((item) => {
-        const product = products.find((p) => p.id === item.product.id)
+      storedItems.flatMap(({ productId, ...item }) => {
+        const product = products.find((p) => p.id === productId)
         return product ? [{ ...item, product, price: getPrice(product, item.size) }] : []
       }),
     [storedItems, products],
   )
 
   useEffect(() => {
+    // mahsulotlar bazadan kelmaguncha saqlanmaydi, aks holda savat bo'sh deb yozilib qolardi
+    if (!loaded) return
     const stored: StoredCartItem[] = items.map(({ product, size, color, quantity }) => ({
       productId: product.id,
       size,
@@ -90,13 +95,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
       quantity,
     }))
     saveToStorage(STORAGE_KEY, stored)
-  }, [items])
+  }, [items, loaded])
   const [isOpen, setIsOpen] = useState(false)
   const openCart = useCallback(() => setIsOpen(true), [])
   const closeCart = useCallback(() => setIsOpen(false), [])
 
   const addItem = (product: Product, size: string, color: string) => {
-    const key = `${product.id}-${size}-${color}`
+    const key = makeKey(product.id, size, color)
     setItems((prev) => {
       const existing = prev.find((item) => item.key === key)
       if (existing) {
@@ -104,7 +109,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           item.key === key ? { ...item, quantity: item.quantity + 1 } : item,
         )
       }
-      return [...prev, { key, product, size, color, quantity: 1 }]
+      return [...prev, { key, productId: product.id, size, color, quantity: 1 }]
     })
   }
 

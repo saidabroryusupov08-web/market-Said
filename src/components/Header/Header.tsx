@@ -1,12 +1,12 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
-import { Heart, History, Menu, Search, Settings, ShoppingBag, User, X } from 'lucide-react'
+import { Heart, History, Menu, Search, ShoppingBag, User, X } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useCart } from '../../context/CartContext'
 import { useCatalogFilter } from '../../context/CatalogFilterContext'
 import { useSearch } from '../../context/SearchContext'
 import { useWishlist } from '../../context/WishlistContext'
 import type { NavTag } from '../../data/products'
-import Logo from '../ui/Logo'
+import Logo from '../../../shared/Logo'
 import CartDrawer from './CartDrawer'
 import WishlistDrawer from './WishlistDrawer'
 
@@ -194,12 +194,6 @@ function Header() {
         </div>
 
         <div className="flex items-center gap-2 sm:gap-4">
-          <IconTooltip label="Админ-панель">
-            <Link to="/admin" aria-label="Админ-панель" className={iconBtn}>
-              <Settings className="size-5" />
-            </Link>
-          </IconTooltip>
-
           <IconTooltip label="Аккаунт">
             <Link to="/" aria-label="Аккаунт" className={iconBtn}>
               <User className="size-5" />

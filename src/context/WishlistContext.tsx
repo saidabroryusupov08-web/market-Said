@@ -1,16 +1,14 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useProducts } from './ProductsContext'
-import { loadProducts } from '../data/productStore'
 import { loadFromStorage, saveToStorage } from '../utils/storage'
 
 const STORAGE_KEY = 'stylehub-wishlist'
 
-// o'chirilgan mahsulotlarning id'lari saqlanib qolmasligi uchun tekshiriladi
+// mahsulotlar hali bazadan kelmagan bo'lishi mumkin: bu yerda faqat raqamlar olinadi,
+// o'chirilgan mahsulotlar keyinroq (likedIds'da) chiqarib tashlanadi
 function loadLikedIds(): number[] {
   const saved = loadFromStorage<unknown>(STORAGE_KEY, [])
-  if (!Array.isArray(saved)) return []
-  const products = loadProducts()
-  return saved.filter((id) => products.some((product) => product.id === id))
+  return Array.isArray(saved) ? saved.filter((id): id is number => typeof id === 'number') : []
 }
 
 type WishlistContextValue = {
@@ -29,7 +27,7 @@ const WishlistContext = createContext<WishlistContextValue | null>(null)
 
 export function WishlistProvider({ children }: { children: ReactNode }) {
   const [storedIds, setLikedIds] = useState<number[]>(loadLikedIds)
-  const { products } = useProducts()
+  const { products, loaded } = useProducts()
 
   // admin o'chirgan mahsulotlar sevimlilar sonida ko'rinmasligi uchun
   const likedIds = useMemo(
@@ -38,8 +36,9 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
   )
 
   useEffect(() => {
-    saveToStorage(STORAGE_KEY, likedIds)
-  }, [likedIds])
+    // mahsulotlar bazadan kelmaguncha saqlanmaydi, aks holda ro'yxat bo'sh deb yozilib qolardi
+    if (loaded) saveToStorage(STORAGE_KEY, likedIds)
+  }, [likedIds, loaded])
 
   const [lastLikedAt, setLastLikedAt] = useState(0)
   const [isOpen, setIsOpen] = useState(false)

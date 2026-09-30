@@ -12,7 +12,7 @@ function Shell({ children }: { children: ReactNode }) {
     <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
       <div className="w-full max-w-sm">
         <div className="mb-6 flex flex-col items-center text-center">
-          <LogoMark className="size-14" />
+          <LogoMark className="size-16" />
           <p className="mt-3 text-lg font-extrabold tracking-tight">
             <span className="bg-gradient-to-br from-blue-700 to-rose-600 bg-clip-text text-transparent">
               cX

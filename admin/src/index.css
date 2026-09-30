@@ -21,4 +21,16 @@ html {
 
 body {
   @apply bg-gray-50 text-gray-900 antialiased;
+  /* tugmalarni tez-tez bosganda yoki sichqonchani tortganda yorliq va sarlavhalar
+     ko'k bo'lib belgilanib qolmasligi uchun (do'kondagi bilan bir xil qoida) */
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* yozish maydonlarida matnni belgilash va nusxalash ishlashi kerak */
+input,
+textarea,
+[contenteditable] {
+  user-select: text;
+  -webkit-user-select: text;
 }

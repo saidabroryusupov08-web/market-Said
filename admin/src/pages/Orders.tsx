@@ -96,7 +96,8 @@ function OrderDetails({ order, onClose }: { order: Order; onClose: () => void })
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-3 rounded-lg bg-gray-50 p-4 text-sm sm:grid-cols-2">
+        {/* mijoz ma'lumotini nusxalash mumkin bo'lishi uchun select-text */}
+        <div className="grid grid-cols-1 gap-3 rounded-lg bg-gray-50 p-4 text-sm select-text sm:grid-cols-2">
           <p className="font-semibold text-gray-950 sm:col-span-2">{order.customer_name}</p>
           <a href={`tel:${order.phone.replace(/[^\d+]/g, '')}`} className="flex items-center gap-2 text-gray-700 hover:text-blue-600">
             <Phone className="size-4 shrink-0 text-gray-400" />

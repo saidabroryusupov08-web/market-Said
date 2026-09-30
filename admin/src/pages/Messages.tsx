@@ -81,7 +81,7 @@ function MessageCard({
             target="_blank"
             rel="noopener noreferrer"
             title="Написать в Gmail"
-            className="mt-1.5 block truncate text-base font-semibold text-gray-950 hover:text-blue-600"
+            className="mt-1.5 block truncate text-base font-semibold text-gray-950 select-text hover:text-blue-600"
           >
             {m.email}
           </a>

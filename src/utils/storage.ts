@@ -9,10 +9,13 @@ export function loadFromStorage<T>(key: string, fallback: T): T {
   }
 }
 
-export function saveToStorage(key: string, value: unknown) {
+// false qaytsa saqlanmadi (masalan xotira to'lgan) — kerak joyda foydalanuvchiga aytiladi
+export function saveToStorage(key: string, value: unknown): boolean {
   try {
     localStorage.setItem(key, JSON.stringify(value))
+    return true
   } catch {
     // saqlab bo'lmasa, sayt baribir ishlashda davom etadi
+    return false
   }
 }

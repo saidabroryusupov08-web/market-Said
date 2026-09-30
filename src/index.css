@@ -54,4 +54,14 @@ html {
 
 body {
   @apply bg-gray-50 text-gray-900 antialiased;
+  /* sahifadagi matnlarni sichqoncha bilan belgilab (ko'k blok) bo'lmaydi */
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* yozish maydonlarida esa matnni belgilash, nusxalash ishlashi kerak */
+input,
+textarea {
+  user-select: text;
+  -webkit-user-select: text;
 }

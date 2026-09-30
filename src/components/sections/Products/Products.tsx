@@ -4,6 +4,7 @@ import { useCatalogFilter } from '../../../context/CatalogFilterContext'
 import { useSearch } from '../../../context/SearchContext'
 import { categories, products as defaultProducts, type Product } from '../../../data/products'
 import { useProducts } from '../../../context/ProductsContext'
+import { minPrice } from '../../../utils/price'
 import Select from '../../ui/Select'
 import ProductCard from './ProductCard'
 import QuickViewModal from './QuickViewModal'
@@ -49,8 +50,9 @@ function Products() {
     })
 
     return filtered.sort((a, b) => {
-      if (sort === 'price-asc') return a.price - b.price
-      if (sort === 'price-desc') return b.price - a.price
+      // kartada ko'rinadigan "от" narxi bo'yicha (o'lchamga alohida narx qo'yilgan bo'lishi mumkin)
+      if (sort === 'price-asc') return minPrice(a) - minPrice(b)
+      if (sort === 'price-desc') return minPrice(b) - minPrice(a)
       if (sort === 'newest') {
         // yangi qo'shilganlar tepada (eng oxirgisi birinchi), qolganlari nom bo'yicha
         const aNew = !defaultIds.has(a.id)

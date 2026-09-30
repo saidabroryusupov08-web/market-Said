@@ -8,6 +8,8 @@ type SelectProps = {
   placeholder?: string
   className?: string
   ariaLabel: string
+  // tanlash majburiy bo'lsa-yu hali tanlanmagan bo'lsa qizil rangda ko'rinadi
+  invalid?: boolean
 }
 
 function Select({
@@ -17,6 +19,7 @@ function Select({
   placeholder,
   className = '',
   ariaLabel,
+  invalid = false,
 }: SelectProps) {
   const [open, setOpen] = useState(false)
   const [active, setActive] = useState(0)
@@ -68,17 +71,20 @@ function Select({
         aria-label={ariaLabel}
         aria-expanded={open}
         aria-controls={listId}
+        aria-invalid={invalid || undefined}
         onPointerDown={(e) => {
           if (e.button !== 0) return
           if (open) setOpen(false)
           else openList()
         }}
         onKeyDown={onKeyDown}
-        className={`flex h-10 w-full items-center justify-between gap-2 rounded-lg border bg-gray-100 px-3 text-left text-sm outline-none transition-colors duration-75 hover:bg-gray-200/70 focus-visible:border-gray-300 focus-visible:bg-white focus-visible:shadow-[0_0_0_3px_rgba(0,0,0,0.08)] ${
+        className={`flex h-10 w-full cursor-pointer items-center justify-between gap-2 rounded-lg border px-3 text-left text-sm outline-none transition-colors duration-150 focus-visible:border-gray-300 focus-visible:bg-white focus-visible:shadow-[0_0_0_3px_rgba(0,0,0,0.08)] ${
           open
-            ? 'border-gray-300 bg-white shadow-[0_0_0_3px_rgba(0,0,0,0.08)] hover:bg-white'
-            : 'border-transparent'
-        } ${selected ? 'text-gray-950' : 'text-gray-500'}`}
+            ? 'border-gray-300 bg-white shadow-[0_0_0_3px_rgba(0,0,0,0.08)]'
+            : invalid
+              ? 'border-red-400 bg-red-50 hover:bg-red-100/70'
+              : 'border-transparent bg-gray-100 hover:bg-gray-200/70'
+        } ${selected ? 'text-gray-950' : invalid && !open ? 'text-red-600' : 'text-gray-500'}`}
       >
         <span className="truncate">{selected?.label ?? placeholder}</span>
         <ChevronDown

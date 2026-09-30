@@ -4,6 +4,7 @@ import { useWishlist } from '../../../context/WishlistContext'
 import type { Product } from '../../../data/products'
 import ProductImage from './ProductImage'
 import ProductOptions from './ProductOptions'
+import ProductPrice from './ProductPrice'
 
 type ProductCardProps = {
   product: Product
@@ -17,6 +18,7 @@ function ProductCard({ product, onQuickView }: ProductCardProps) {
   const [hideLike, setHideLike] = useState(false)
   // faqat foydalanuvchi bosganda sakraydi, sahifa yuklanganda emas
   const [popped, setPopped] = useState(false)
+  const [size, setSize] = useState('')
 
   const toggleLike = () => {
     if (liked) setHideLike(true)
@@ -32,7 +34,7 @@ function ProductCard({ product, onQuickView }: ProductCardProps) {
 
   return (
     <article
-      className="group rounded-xl border border-gray-200 bg-white transition hover:shadow-lg"
+      className="group flex flex-col rounded-xl border border-gray-200 bg-white transition hover:shadow-lg"
       onMouseLeave={() => setHideLike(false)}
     >
       <div className="relative aspect-square overflow-hidden rounded-t-xl">
@@ -59,17 +61,22 @@ function ProductCard({ product, onQuickView }: ProductCardProps) {
         </button>
       </div>
 
-      <div className="p-4 sm:p-[18px]">
+      {/* nom uzun-qisqa bo'lsa ham narx va tugmalar hamma kartada bir qatorda turishi uchun pastga suriladi */}
+      <div className="flex flex-1 flex-col p-4 sm:p-[18px]">
         <div className="flex items-start justify-between gap-3">
           <h3 className="text-lg text-gray-950">{product.name}</h3>
           <span className="shrink-0 rounded-md border border-gray-200 px-2 py-0.5 text-xs font-semibold text-gray-950">
             {product.category}
           </span>
         </div>
-        <p className="mt-2 mb-4 text-xl font-medium text-gray-950">
-          ${product.price.toFixed(2)}
-        </p>
-        <ProductOptions product={product} />
+        <div className="mt-auto pt-2">
+          <ProductPrice
+            product={product}
+            size={size}
+            className="mb-4 text-xl font-medium text-gray-950"
+          />
+          <ProductOptions product={product} size={size} onSizeChange={setSize} />
+        </div>
       </div>
     </article>
   )

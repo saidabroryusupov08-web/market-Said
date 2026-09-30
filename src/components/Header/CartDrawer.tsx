@@ -29,6 +29,8 @@ function CartDrawer() {
     <div
       className={`fixed inset-0 z-50 ${open ? '' : 'pointer-events-none'}`}
       aria-hidden={!open}
+      // yopiq panel ichidagi tugmalarga Tab bilan o'tib bo'lmasligi uchun
+      inert={!open}
     >
       <div
         className={`absolute inset-0 bg-black/50 transition-opacity duration-500 ${
@@ -116,7 +118,7 @@ function CartDrawer() {
                         </button>
                       </div>
                       <p className="font-medium text-gray-950">
-                        ${(item.product.price * item.quantity).toFixed(2)}
+                        ${(item.price * item.quantity).toFixed(2)}
                       </p>
                     </div>
                   </div>

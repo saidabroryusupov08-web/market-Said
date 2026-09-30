@@ -21,7 +21,17 @@ function sanitize(p: Product): Product | null {
     description: typeof p.description === 'string' ? p.description : '',
     sizes: Array.isArray(p.sizes) ? p.sizes : [],
     colors: Array.isArray(p.colors) ? p.colors : [],
+    sizePrices: sanitizeSizePrices(p.sizePrices),
   }
+}
+
+function sanitizeSizePrices(value: unknown): Record<string, number> | undefined {
+  if (!value || typeof value !== 'object') return undefined
+  const entries = Object.entries(value).filter(
+    (entry): entry is [string, number] =>
+      typeof entry[1] === 'number' && Number.isFinite(entry[1]) && entry[1] > 0,
+  )
+  return entries.length > 0 ? Object.fromEntries(entries) : undefined
 }
 
 export function loadProducts(): Product[] {
@@ -44,6 +54,6 @@ export function loadProducts(): Product[] {
   return [...byId.values()]
 }
 
-export function saveProducts(list: Product[]) {
-  saveToStorage(KEY, list)
+export function saveProducts(list: Product[]): boolean {
+  return saveToStorage(KEY, list)
 }

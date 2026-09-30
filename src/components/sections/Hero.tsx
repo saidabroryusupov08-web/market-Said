@@ -50,7 +50,7 @@ function Hero() {
           {/* "New" va "50% Off" belgilari rasmning o'zida bor */}
           <img
             src={heroImg}
-            alt="Интерьер магазина одежды StyleHub"
+            alt="Интерьер магазина одежды cX-shop"
             className="size-full object-cover"
           />
         </div>

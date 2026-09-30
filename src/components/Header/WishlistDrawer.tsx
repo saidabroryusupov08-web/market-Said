@@ -3,6 +3,7 @@ import { Heart, X } from 'lucide-react'
 import { useWishlist } from '../../context/WishlistContext'
 import { useProducts } from '../../context/ProductsContext'
 import ProductImage from '../sections/Products/ProductImage'
+import ProductPrice from '../sections/Products/ProductPrice'
 
 function WishlistDrawer() {
   const { likedIds, count, isOpen: open, closeWishlist: onClose, toggleLike } = useWishlist()
@@ -27,6 +28,8 @@ function WishlistDrawer() {
     <div
       className={`fixed inset-0 z-50 ${open ? '' : 'pointer-events-none'}`}
       aria-hidden={!open}
+      // yopiq panel ichidagi tugmalarga Tab bilan o'tib bo'lmasligi uchun
+      inert={!open}
     >
       <div
         className={`absolute inset-0 bg-black/50 transition-opacity duration-500 ${
@@ -92,9 +95,11 @@ function WishlistDrawer() {
                     </button>
                   </div>
                   <p className="text-sm text-gray-500">{product.category}</p>
-                  <p className="mt-auto font-medium text-gray-950">
-                    ${product.price.toFixed(2)}
-                  </p>
+                  <ProductPrice
+                    product={product}
+                    size=""
+                    className="mt-auto font-medium text-gray-950"
+                  />
                 </div>
               </li>
             ))}

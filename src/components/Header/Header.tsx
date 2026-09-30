@@ -6,6 +6,7 @@ import { useCatalogFilter } from '../../context/CatalogFilterContext'
 import { useSearch } from '../../context/SearchContext'
 import { useWishlist } from '../../context/WishlistContext'
 import type { NavTag } from '../../data/products'
+import Logo from '../ui/Logo'
 import CartDrawer from './CartDrawer'
 import WishlistDrawer from './WishlistDrawer'
 
@@ -83,7 +84,7 @@ function SearchInput({ onSubmit }: { onSubmit?: () => void }) {
         placeholder="Поиск товаров..."
         aria-label="Поиск товаров"
         autoComplete="off"
-        className="h-[37px] w-full rounded-lg border border-transparent bg-gray-100 pr-9 pl-10 text-sm outline-none transition focus:border-gray-300 focus:bg-white focus:shadow-[0_0_0_3px_rgba(0,0,0,0.08)]"
+        className="h-[37px] w-full rounded-lg border border-transparent bg-gray-100 pr-9 pl-10 text-sm outline-none transition focus:border-blue-500 focus:bg-white focus:shadow-[0_0_0_4px_rgba(59,130,246,0.25)]"
       />
       {query && (
         <button
@@ -166,8 +167,8 @@ function Header() {
           >
             {menuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
           </button>
-          <a href="#" className="text-xl font-semibold text-black">
-            StyleHub
+          <a href="#" aria-label="cX-shop — на главную" className="shrink-0 lg:mr-10">
+            <Logo compact />
           </a>
 
           <ul className="hidden items-center gap-8 lg:flex">

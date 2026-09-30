@@ -1,4 +1,11 @@
-import { createContext, useContext, useEffect, useState, type FormEvent } from 'react'
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from 'react'
 import { Link } from 'react-router-dom'
 import {
   AlertTriangle,
@@ -7,16 +14,20 @@ import {
   Eye,
   EyeOff,
   ImageIcon,
+  Inbox,
   KeyRound,
   Lock,
+  Package,
   Pencil,
   Plus,
   Trash2,
   X,
 } from 'lucide-react'
+import MessagesPanel from '../components/admin/MessagesPanel'
 import { useProducts } from '../context/ProductsContext'
 import { categories } from '../data/products'
 import type { NavTag, Product } from '../data/products'
+import { autoSizePrice } from '../utils/price'
 import { loadFromStorage, saveToStorage } from '../utils/storage'
 
 // navbar'dagi New Arrivals/Men/Women/Kids/Sale filtrlari shu teglar bo'yicha ishlaydi
@@ -101,6 +112,56 @@ function ConfirmDialog({
   )
 }
 
+type SizePriceDraft = Record<string, string>
+
+// bo'sh qoldirilgan o'lcham avtomatik narx oladi (placeholder'da ko'rinadi)
+function SizePricesInput({
+  sizes,
+  basePrice,
+  value,
+  onChange,
+}: {
+  sizes: string[]
+  basePrice: number
+  value: SizePriceDraft
+  onChange: (value: SizePriceDraft) => void
+}) {
+  if (sizes.length < 2) return null
+  const base = basePrice > 0 ? basePrice : 0
+
+  return (
+    <div className="grid grid-cols-[repeat(auto-fill,minmax(4.5rem,1fr))] gap-1.5">
+      {sizes.map((size) => (
+        <label key={size} className="flex flex-col gap-0.5">
+          <span className="truncate text-[11px] text-gray-500">{size}</span>
+          <input
+            type="number"
+            step="0.01"
+            min="0"
+            className={`${inputClass} px-2 py-1.5`}
+            placeholder={base ? autoSizePrice({ price: base, sizes }, size).toFixed(2) : 'авто'}
+            value={value[size] ?? ''}
+            onChange={(e) => onChange({ ...value, [size]: e.target.value })}
+          />
+        </label>
+      ))}
+    </div>
+  )
+}
+
+function toSizePrices(sizes: string[], draft: SizePriceDraft) {
+  const entries = sizes
+    .map((size) => [size, Number(draft[size])] as const)
+    .filter(([, price]) => Number.isFinite(price) && price > 0)
+  return entries.length > 0 ? Object.fromEntries(entries) : undefined
+}
+
+function toSizePriceDraft(product: Product): SizePriceDraft {
+  return Object.fromEntries(
+    Object.entries(product.sizePrices ?? {}).map(([size, price]) => [size, String(price)]),
+  )
+}
+
 // "S, M, L" -> ['S', 'M', 'L']
 function splitList(text: string) {
   return text
@@ -155,6 +216,7 @@ function AddProductForm({ onDone }: { onDone: () => void }) {
   const showToast = useToast()
   const [form, setForm] = useState(emptyForm)
   const [tags, setTags] = useState<NavTag[]>([])
+  const [sizePrices, setSizePrices] = useState<SizePriceDraft>({})
   // file input'ni tozalash uchun key o'zgartiriladi
   const [fileKey, setFileKey] = useState(0)
 
@@ -189,9 +251,11 @@ function AddProductForm({ onDone }: { onDone: () => void }) {
       colors,
       image: form.image.trim() || undefined,
       tags: tags.length > 0 ? tags : undefined,
+      sizePrices: toSizePrices(sizes, sizePrices),
     })
     setForm(emptyForm)
     setTags([])
+    setSizePrices({})
     setFileKey((k) => k + 1)
     onDone()
   }
@@ -269,6 +333,20 @@ function AddProductForm({ onDone }: { onDone: () => void }) {
           />
         </div>
 
+        {splitList(form.sizes).length > 1 && (
+          <div className="sm:col-span-2 lg:col-span-4">
+            <label className={labelClass}>
+              Цена по размерам (пусто — рассчитается автоматически)
+            </label>
+            <SizePricesInput
+              sizes={splitList(form.sizes)}
+              basePrice={Number(form.price)}
+              value={sizePrices}
+              onChange={setSizePrices}
+            />
+          </div>
+        )}
+
         <div className="sm:col-span-2 lg:col-span-4">
           <label className={labelClass}>Описание</label>
           <textarea
@@ -338,6 +416,7 @@ type EditFormState = {
   name: string
   category: string
   price: string
+  sizes: string
   colors: string
   image: string
 }
@@ -347,6 +426,7 @@ function toEditForm(product: Product): EditFormState {
     name: product.name,
     category: product.category,
     price: String(product.price),
+    sizes: product.sizes.join(', '),
     colors: product.colors.join(', '),
     image: product.image ?? '',
   }
@@ -358,6 +438,7 @@ function AdminProductCard({ product }: { product: Product }) {
   const [isEditing, setIsEditing] = useState(false)
   const [form, setForm] = useState<EditFormState>(() => toEditForm(product))
   const [tags, setTags] = useState<NavTag[]>(() => product.tags ?? [])
+  const [sizePrices, setSizePrices] = useState<SizePriceDraft>(() => toSizePriceDraft(product))
   const [fileKey, setFileKey] = useState(0)
   const [confirmDelete, setConfirmDelete] = useState(false)
 
@@ -367,6 +448,7 @@ function AdminProductCard({ product }: { product: Product }) {
   const startEdit = () => {
     setForm(toEditForm(product))
     setTags(product.tags ?? [])
+    setSizePrices(toSizePriceDraft(product))
     setIsEditing(true)
   }
 
@@ -381,18 +463,22 @@ function AdminProductCard({ product }: { product: Product }) {
 
   function save() {
     const price = Number(form.price)
+    const sizes = splitList(form.sizes)
     const colors = splitList(form.colors)
     if (!form.name.trim()) return showToast('Введите название')
     if (!(price > 0)) return showToast('Введите корректную цену')
-    if (colors.length === 0) return showToast('Укажите хотя бы один цвет')
+    if (sizes.length === 0 || colors.length === 0)
+      return showToast('Укажите хотя бы один размер и цвет')
 
     updateProduct(product.id, {
       name: form.name.trim(),
       category: form.category,
       price,
+      sizes,
       colors,
       image: form.image.trim() || undefined,
       tags: tags.length > 0 ? tags : undefined,
+      sizePrices: toSizePrices(sizes, sizePrices),
     })
     setIsEditing(false)
   }
@@ -514,6 +600,18 @@ function AdminProductCard({ product }: { product: Product }) {
                 onChange={(e) => set('price', e.target.value)}
               />
             </div>
+            <input
+              className={inputClass}
+              placeholder="Размеры: XS, S, M, L"
+              value={form.sizes}
+              onChange={(e) => set('sizes', e.target.value)}
+            />
+            <SizePricesInput
+              sizes={splitList(form.sizes)}
+              basePrice={Number(form.price)}
+              value={sizePrices}
+              onChange={setSizePrices}
+            />
             <input
               className={inputClass}
               placeholder="Цвета: Чёрный, Белый"
@@ -910,11 +1008,37 @@ function ChangePasswordModal({
   )
 }
 
+function TabButton({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean
+  onClick: () => void
+  children: ReactNode
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`-mb-px flex cursor-pointer items-center gap-2 border-b-2 px-3 py-2.5 text-sm font-medium transition ${
+        active
+          ? 'border-gray-950 text-gray-950'
+          : 'border-transparent text-gray-500 hover:text-gray-800'
+      }`}
+    >
+      {children}
+    </button>
+  )
+}
+
 function AdminDashboard({ onPasswordChanged }: { onPasswordChanged: () => void }) {
-  const { products } = useProducts()
+  const { products, saveFailed } = useProducts()
   const [isAdding, setIsAdding] = useState(false)
   const [isChangingPassword, setIsChangingPassword] = useState(false)
   const [toast, setToast] = useState<{ id: number; message: string } | null>(null)
+  const [tab, setTab] = useState<'products' | 'messages'>('products')
+  const [unread, setUnread] = useState(0)
 
   const showToast = (message: string) => setToast({ id: Date.now(), message })
 
@@ -946,18 +1070,51 @@ function AdminDashboard({ onPasswordChanged }: { onPasswordChanged: () => void }
             </button>
           </div>
 
-          <div className="mb-6 flex items-end justify-between">
-            <div>
-              <h1 className="text-2xl font-semibold text-gray-950">Админ-панель</h1>
-              <p className="mt-1 text-sm text-gray-500">Товаров: {products.length}</p>
+          <div className="mb-6">
+            <h1 className="text-2xl font-semibold text-gray-950">Админ-панель</h1>
+            <div className="mt-4 flex gap-1 border-b border-gray-200">
+              <TabButton active={tab === 'products'} onClick={() => setTab('products')}>
+                <Package className="size-4" />
+                Товары
+                <span className="text-gray-400">{products.length}</span>
+              </TabButton>
+              <TabButton active={tab === 'messages'} onClick={() => setTab('messages')}>
+                <Inbox className="size-4" />
+                Сообщения
+                {unread > 0 && (
+                  <span className="rounded-full bg-blue-600 px-1.5 py-0.5 text-[11px] leading-none font-semibold text-white">
+                    {unread}
+                  </span>
+                )}
+              </TabButton>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            <AddProductTile onClick={() => setIsAdding(true)} />
-            {products.map((product) => (
-              <AdminProductCard key={product.id} product={product} />
-            ))}
+          {tab === 'products' && saveFailed && (
+            <div
+              role="alert"
+              className="mb-5 flex items-start gap-2.5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+            >
+              <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+              <span>
+                Последнее изменение не сохранилось: память браузера заполнена. После обновления
+                страницы оно пропадёт. Удалите лишние товары или замените загруженные фото на
+                ссылки (URL) и повторите.
+              </span>
+            </div>
+          )}
+
+          {tab === 'products' && (
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              <AddProductTile onClick={() => setIsAdding(true)} />
+              {products.map((product) => (
+                <AdminProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          )}
+          {/* doim yuklangan turadi: "Товары" ochiq paytda ham yangi xabarlar soni yangilanib turadi */}
+          <div className={tab === 'messages' ? '' : 'hidden'}>
+            <MessagesPanel onUnreadChange={setUnread} />
           </div>
         </div>
 

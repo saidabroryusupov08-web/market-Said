@@ -1,8 +1,9 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { X } from 'lucide-react'
 import type { Product } from '../../../data/products'
 import ProductImage from './ProductImage'
 import ProductOptions from './ProductOptions'
+import ProductPrice from './ProductPrice'
 
 type QuickViewModalProps = {
   product: Product | null
@@ -22,6 +23,13 @@ function QuickViewModal({ product, onClose }: QuickViewModalProps) {
   }, [product, onClose])
 
   if (!product) return null
+
+  // key: boshqa mahsulot ochilganda tanlangan o'lcham tozalanadi
+  return <QuickViewContent key={product.id} product={product} onClose={onClose} />
+}
+
+function QuickViewContent({ product, onClose }: { product: Product; onClose: () => void }) {
+  const [size, setSize] = useState('')
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -52,12 +60,14 @@ function QuickViewModal({ product, onClose }: QuickViewModalProps) {
             {product.category}
           </span>
           <h2 className="mt-3 text-2xl text-gray-950">{product.name}</h2>
-          <p className="mt-2 text-2xl font-medium text-gray-950">
-            ${product.price.toFixed(2)}
-          </p>
+          <ProductPrice
+            product={product}
+            size={size}
+            className="mt-2 text-2xl font-medium text-gray-950"
+          />
           <p className="mt-4 mb-6 text-gray-500">{product.description}</p>
           <div className="mt-auto">
-            <ProductOptions product={product} />
+            <ProductOptions product={product} size={size} onSizeChange={setSize} />
           </div>
         </div>
       </div>

@@ -16,6 +16,8 @@ type ProductsContextValue = {
   addProduct: (product: Omit<Product, 'id'>) => void
   updateProduct: (id: number, changes: Partial<Product>) => void
   deleteProduct: (id: number) => void
+  // oxirgi o'zgarish brauzer xotirasiga sig'madi (odatda rasmlar ko'payib ketganda)
+  saveFailed: boolean
 }
 
 const ProductsContext = createContext<ProductsContextValue | null>(null)
@@ -31,32 +33,37 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
     ),
   )
 
-  useEffect(() => {
-    saveProducts(products)
-  }, [products])
+  const [saveFailed, setSaveFailed] = useState(false)
 
   useEffect(() => {
     saveToStorage(NEXT_ID_KEY, nextId)
   }, [nextId])
 
+  // saqlash o'zgarish paytida qilinadi: natijasi (sig'di/sig'madi) admin'ga ko'rsatiladi,
+  // aks holda xotira to'lganda yangi mahsulot refresh'dan keyin jimgina yo'qolardi
+  const commit = (next: Product[]) => {
+    setProducts(next)
+    setSaveFailed(!saveProducts(next))
+  }
+
   const addProduct = (product: Omit<Product, 'id'>) => {
     const id = nextId
     setNextId((n) => n + 1)
-    setProducts((prev) => [{ ...product, id }, ...prev])
+    commit([{ ...product, id }, ...products])
   }
 
   const updateProduct = (id: number, changes: Partial<Product>) => {
-    setProducts((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, ...changes } : p)),
-    )
+    commit(products.map((p) => (p.id === id ? { ...p, ...changes } : p)))
   }
 
   const deleteProduct = (id: number) => {
-    setProducts((prev) => prev.filter((p) => p.id !== id))
+    commit(products.filter((p) => p.id !== id))
   }
 
   return (
-    <ProductsContext.Provider value={{ products, addProduct, updateProduct, deleteProduct }}>
+    <ProductsContext.Provider
+      value={{ products, addProduct, updateProduct, deleteProduct, saveFailed }}
+    >
       {children}
     </ProductsContext.Provider>
   )

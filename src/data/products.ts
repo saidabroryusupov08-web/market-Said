@@ -34,6 +34,8 @@ export type Product = {
   colors: string[]
   image?: string
   tags?: NavTag[]
+  // o'lcham bo'yicha alohida narx (admin kiritadi); berilmagan o'lcham uchun avtomatik hisoblanadi
+  sizePrices?: Record<string, number>
 }
 
 export const categories = [

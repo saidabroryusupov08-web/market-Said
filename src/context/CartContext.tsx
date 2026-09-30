@@ -10,6 +10,7 @@ import {
 import { useProducts } from './ProductsContext'
 import type { Product } from '../data/products'
 import { loadProducts } from '../data/productStore'
+import { getPrice } from '../utils/price'
 import { loadFromStorage, saveToStorage } from '../utils/storage'
 
 const STORAGE_KEY = 'stylehub-cart'
@@ -22,7 +23,10 @@ type StoredCartItem = {
   quantity: number
 }
 
-function loadCart(): CartItem[] {
+// narx saqlanmaydi, har safar mahsulot va o'lchamdan hisoblanadi
+type CartEntry = Omit<CartItem, 'price'>
+
+function loadCart(): CartEntry[] {
   const saved = loadFromStorage<unknown>(STORAGE_KEY, [])
   if (!Array.isArray(saved)) return []
   return saved.flatMap((item: StoredCartItem) => {
@@ -46,6 +50,8 @@ export type CartItem = {
   size: string
   color: string
   quantity: number
+  // tanlangan o'lchamning bitta dona narxi
+  price: number
 }
 
 type CartContextValue = {
@@ -63,7 +69,7 @@ type CartContextValue = {
 const CartContext = createContext<CartContextValue | null>(null)
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [storedItems, setItems] = useState<CartItem[]>(loadCart)
+  const [storedItems, setItems] = useState<CartEntry[]>(loadCart)
   const { products } = useProducts()
 
   // admin narxni o'zgartirsa yoki mahsulotni o'chirsa, savat darhol yangilanadi
@@ -71,7 +77,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     () =>
       storedItems.flatMap((item) => {
         const product = products.find((p) => p.id === item.product.id)
-        return product ? [{ ...item, product }] : []
+        return product ? [{ ...item, product, price: getPrice(product, item.size) }] : []
       }),
     [storedItems, products],
   )
@@ -115,7 +121,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const count = items.reduce((sum, item) => sum + item.quantity, 0)
   const total = items.reduce(
-    (sum, item) => sum + item.product.price * item.quantity,
+    (sum, item) => sum + item.price * item.quantity,
     0,
   )
 

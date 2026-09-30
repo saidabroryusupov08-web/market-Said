@@ -4,11 +4,11 @@ import type { NavTag, Product } from './products'
 // Brauzerda faqat ochiq (anon / publishable) kalit ishlatiladi. Kim nimani o'qiy/yoza olishini
 // bazadagi RLS qoidalari hal qiladi (supabase/schema.sql), shuning uchun bu kalit maxfiy emas.
 // Env: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY (Vercel'da yoki .env.local'da)
-const url = import.meta.env.VITE_SUPABASE_URL as string | undefined
-const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined
+export const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined
+export const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined
 
 export const supabase: SupabaseClient | null =
-  url && anonKey ? createClient(url, anonKey) : null
+  supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null
 
 export const PRODUCT_IMAGES_BUCKET = 'product-images'
 

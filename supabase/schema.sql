@@ -18,9 +18,20 @@ create policy "admin o'zini ko'radi" on public.admins
   for select to authenticated using (user_id = auth.uid());
 
 -- joriy foydalanuvchi adminmi? (security definer: admins jadvalini RLS'siz tekshiradi)
+-- 2FA yoqilgan admin kodni kiritmaguncha (sessiya 'aal2' bo'lmaguncha) admin hisoblanmaydi:
+-- parol o'g'irlansa ham, telefonsiz bazaga yozib bo'lmaydi.
 create or replace function public.is_admin() returns boolean
-  language sql stable security definer set search_path = public
-as $$ select exists (select 1 from public.admins where user_id = auth.uid()) $$;
+  language sql stable security definer set search_path = public, auth
+as $$
+  select exists (select 1 from public.admins where user_id = auth.uid())
+    and (
+      coalesce(auth.jwt() ->> 'aal', 'aal1') = 'aal2'
+      or not exists (
+        select 1 from auth.mfa_factors f
+        where f.user_id = auth.uid() and f.status = 'verified'
+      )
+    )
+$$;
 
 revoke all on function public.is_admin() from public;
 grant execute on function public.is_admin() to anon, authenticated;
@@ -89,9 +100,14 @@ create policy "xabarni faqat admin o'chiradi" on public.messages
 -- insert qoidasi yo'q: brauzerdan to'g'ridan yozib bo'lmaydi, faqat server (service_role)
 
 -- ========== Mahsulot rasmlari (Storage) ==========
-insert into storage.buckets (id, name, public)
-values ('product-images', 'product-images', true)
-on conflict (id) do nothing;
+-- ochiq (hamma ko'radi), bitta fayl 2 MB gacha, faqat rasm turlari
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('product-images', 'product-images', true, 2097152,
+        array['image/jpeg', 'image/png', 'image/webp'])
+on conflict (id) do update set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
 
 drop policy if exists "rasmni faqat admin yuklaydi" on storage.objects;
 create policy "rasmni faqat admin yuklaydi" on storage.objects
@@ -111,7 +127,9 @@ create policy "rasmni faqat admin o'chiradi" on storage.objects
 -- ========== Admin akkauntini qo'shish ==========
 -- 1) Authentication -> Users -> "Add user" -> email + parol ("Auto Confirm User" belgilang)
 -- 2) Authentication -> Sign In / Providers -> "Allow new users to sign up" ni O'CHIRING
--- 3) Quyidagi qatordagi emailni o'zingiznikiga almashtirib, alohida ishga tushiring:
+-- 3) Authentication -> URL Configuration -> Redirect URLs ga admin manzilini qo'shing,
+--    masalan https://cx-shop-admin.vercel.app/reset  ("Забыли пароль?" xati shu yerga olib keladi)
+-- 4) Quyidagi qatordagi emailni o'zingiznikiga almashtirib, alohida ishga tushiring:
 --
 -- insert into public.admins (user_id)
 -- select id from auth.users where email = 'SIZNING@EMAIL.COM'

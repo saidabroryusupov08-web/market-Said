@@ -50,6 +50,7 @@ type AdminDataValue = {
   deleteProduct: (id: number) => Result
   importDefaults: () => Result
   uploadImage: (file: Blob) => Promise<{ url: string } | { error: string }>
+  removeImage: (url?: string) => Promise<void>
   setRead: (id: number, isRead: boolean) => Result
   markAllRead: () => Result
   deleteMessage: (id: number) => Result
@@ -122,6 +123,7 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
   }
 
   const updateProduct = async (id: number, input: ProductInput) => {
+    const oldImage = products.find((p) => p.id === id)?.image
     const { data, error } = await db
       .from('products')
       .update(toRow(input))
@@ -130,13 +132,17 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
       .single()
     if (error) return describe(error)
     setProducts((prev) => prev.map((p) => (p.id === id ? fromRow(data as ProductRow) : p)))
+    // rasm almashtirilgan bo'lsa, eskisi Storage'da keraksiz qolmasin
+    if (oldImage !== input.image) await removeImage(oldImage)
     return null
   }
 
   const deleteProduct = async (id: number) => {
+    const image = products.find((p) => p.id === id)?.image
     const { error } = await db.from('products').delete().eq('id', id)
     if (error) return describe(error)
     setProducts((prev) => prev.filter((p) => p.id !== id))
+    await removeImage(image)
     return null
   }
 
@@ -156,6 +162,18 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
       .upload(path, file, { contentType: 'image/jpeg', cacheControl: '31536000' })
     if (error) return { error: describe(error) ?? 'Ошибка загрузки' }
     return { url: db.storage.from(PRODUCT_IMAGES_BUCKET).getPublicUrl(path).data.publicUrl }
+  }
+
+  // faqat bizning bucket'dagi rasm o'chiriladi (standart rasmlar va tashqi URL'lar emas).
+  // Boshqa mahsulot ham shu rasmni ishlatsa, o'chirilmaydi. Xato bo'lsa jim: asosiy amal buzilmaydi.
+  const removeImage = async (url?: string) => {
+    const marker = `/storage/v1/object/public/${PRODUCT_IMAGES_BUCKET}/`
+    if (!url || !url.includes(marker)) return
+    const stillUsed = products.filter((p) => p.image === url).length > 1
+    if (stillUsed) return
+    const path = decodeURIComponent(url.split(marker)[1].split('?')[0])
+    const { error } = await db.storage.from(PRODUCT_IMAGES_BUCKET).remove([path])
+    if (error) console.warn('Eski rasmni o‘chirib bo‘lmadi:', error.message)
   }
 
   // ----- xabarlar (o'zgarish darhol ko'rsatiladi, xato bo'lsa ro'yxat qayta yuklanadi) -----
@@ -202,6 +220,7 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
         deleteProduct,
         importDefaults,
         uploadImage,
+        removeImage,
         setRead,
         markAllRead,
         deleteMessage,

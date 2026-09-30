@@ -4,7 +4,7 @@ import { AdminDataProvider } from './lib/data'
 import Layout from './components/Layout'
 import { ToastProvider } from './components/ui'
 import Dashboard from './pages/Dashboard'
-import Login, { NotAdmin, NotConfigured } from './pages/Login'
+import Login, { MfaChallenge, NotAdmin, NotConfigured, ResetPassword } from './pages/Login'
 import Messages from './pages/Messages'
 import Products from './pages/Products'
 
@@ -20,7 +20,9 @@ function Gate() {
         Загрузка...
       </div>
     )
-  if (state.status === 'signed-out') return <Login />
+  if (state.status === 'signed-out') return <Login notice={state.notice} />
+  if (state.status === 'mfa-required') return <MfaChallenge email={state.email} />
+  if (state.status === 'recovery') return <ResetPassword email={state.email} />
   if (state.status === 'not-admin') return <NotAdmin email={state.email} />
 
   return (

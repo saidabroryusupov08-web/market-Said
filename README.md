@@ -18,6 +18,12 @@ market-Said/
 - Asosiy himoya bazada (RLS): mahsulotlarni hamma ko'radi, lekin faqat `admins` jadvalidagi
   foydalanuvchi o'zgartira oladi; xabarlarni faqat admin ko'radi. Admin sayt manzilini bilgan odam ham
   login'siz hech narsa qila olmaydi.
+- **Parol:** kodda yo'q — Supabase'da admin akkauntini yaratganda o'zingiz qo'yasiz. Panel ichida
+  (pastki chap burchak → «Безопасность») almashtiriladi; unutilsa — login sahifasida «Забыли пароль?».
+- **2FA:** «Безопасность» → «Включить 2FA» → Google Authenticator bilan QR skanerlash. Yoqilgandan
+  keyin parol o'g'irlansa ham, telefondagi kodsiz na panelga, na bazaga yozishga ruxsat bor.
+- 30 daqiqa harakat bo'lmasa, panel avtomatik chiqadi. Rasmlar 2 MB gacha, faqat JPG/PNG/WebP;
+  o'chirilgan yoki almashtirilgan mahsulot rasmi Storage'dan ham o'chadi.
 
 ## Sozlash (bir marta)
 
@@ -31,7 +37,9 @@ market-Said/
    insert into public.admins (user_id)
    select id from auth.users where email = 'SIZNING@EMAIL.COM';
    ```
-6. **Project Settings → API**: `Project URL`, `anon` (publishable) kalit va `service_role` kalitni oling.
+6. **Authentication → URL Configuration → Redirect URLs**: admin manzili + `/reset`
+   (masalan `https://cx-shop-admin.vercel.app/reset`) — «Забыли пароль?» xati shu yerga olib keladi.
+7. **Project Settings → API**: `Project URL`, `anon` (publishable) kalit va `service_role` kalitni oling.
 
 ### 2. Vercel — do'kon (mavjud loyiha)
 Settings → Environment Variables:

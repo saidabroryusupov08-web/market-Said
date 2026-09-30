@@ -8,21 +8,30 @@ import {
   Menu,
   Package,
   RefreshCw,
+  ShieldCheck,
   X,
 } from 'lucide-react'
 import Logo from '../../../shared/Logo'
 import { useAuth } from '../lib/auth'
 import { useAdminData } from '../lib/data'
 import GlobalSearch from './GlobalSearch'
+import SecurityModal from './SecurityModal'
 import { iconBtn } from './ui'
 
 // do'kon manzili (Vercel env: VITE_STORE_URL), menyudagi "Открыть магазин" uchun
 const STORE_URL = (import.meta.env.VITE_STORE_URL as string | undefined) || ''
 
-function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
+function Sidebar({
+  onNavigate,
+  onOpenSecurity,
+}: {
+  onNavigate?: () => void
+  onOpenSecurity: () => void
+}) {
   const { state, signOut } = useAuth()
   const { products, unread } = useAdminData()
   const email = state.status === 'admin' ? (state.session.user.email ?? '') : ''
+  const mfaEnabled = state.status === 'admin' && state.mfaEnabled
 
   const links = [
     { to: '/', label: 'Главная', Icon: LayoutDashboard, badge: null },
@@ -93,17 +102,31 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       </nav>
 
       <div className="border-t border-gray-200 p-3">
-        <div className="flex items-center gap-2.5 rounded-lg px-2 py-1.5">
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-gray-950 text-xs font-semibold text-white uppercase">
-            {email.charAt(0) || 'A'}
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block truncate text-xs font-medium text-gray-950">{email}</span>
-            <span className="block text-[11px] text-gray-400">Администратор</span>
-          </span>
+        <div className="flex items-center gap-1">
+          {/* profil: parol va 2FA sozlamalari */}
           <button
             type="button"
-            onClick={signOut}
+            onClick={() => {
+              onNavigate?.()
+              onOpenSecurity()
+            }}
+            title="Безопасность: пароль и 2FA"
+            className="flex min-w-0 flex-1 cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition hover:bg-gray-100"
+          >
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-gray-950 text-xs font-semibold text-white uppercase">
+              {email.charAt(0) || 'A'}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-xs font-medium text-gray-950">{email}</span>
+              <span className="flex items-center gap-1 text-[11px] text-gray-400">
+                <ShieldCheck className={`size-3 ${mfaEnabled ? 'text-green-600' : ''}`} />
+                {mfaEnabled ? '2FA включена' : 'Безопасность'}
+              </span>
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => signOut()}
             aria-label="Выйти"
             title="Выйти"
             className={iconBtn}
@@ -124,6 +147,7 @@ const titles: Record<string, string> = {
 
 function Layout({ children }: { children: ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false)
+  const [securityOpen, setSecurityOpen] = useState(false)
   const { pathname } = useLocation()
   const { reload, loadError } = useAdminData()
   const [reloading, setReloading] = useState(false)
@@ -138,7 +162,7 @@ function Layout({ children }: { children: ReactNode }) {
     <div className="min-h-screen lg:pl-60">
       {/* kompyuterda doim ko'rinadigan chap menyu */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 border-r border-gray-200 bg-white lg:block">
-        <Sidebar />
+        <Sidebar onOpenSecurity={() => setSecurityOpen(true)} />
       </aside>
 
       {/* telefonda: tugma bilan ochiladigan menyu */}
@@ -154,7 +178,10 @@ function Layout({ children }: { children: ReactNode }) {
             >
               <X className="size-4" />
             </button>
-            <Sidebar onNavigate={() => setMenuOpen(false)} />
+            <Sidebar
+              onNavigate={() => setMenuOpen(false)}
+              onOpenSecurity={() => setSecurityOpen(true)}
+            />
           </aside>
         </div>
       )}
@@ -193,6 +220,8 @@ function Layout({ children }: { children: ReactNode }) {
         )}
         {children}
       </main>
+
+      {securityOpen && <SecurityModal onClose={() => setSecurityOpen(false)} />}
     </div>
   )
 }

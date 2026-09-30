@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { ImageIcon, Loader2, Upload, X } from 'lucide-react'
 import { resolveImage } from '../../../shared/images'
 import { autoSizePrice } from '../../../shared/price'
@@ -71,12 +71,30 @@ function toForm(product?: Product): FormState {
 }
 
 function ProductForm({ product, onDone }: { product?: Product; onDone: () => void }) {
-  const { createProduct, updateProduct, uploadImage } = useAdminData()
+  const { createProduct, updateProduct, uploadImage, removeImage } = useAdminData()
   const showToast = useToast()
   const [form, setForm] = useState<FormState>(() => toForm(product))
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({})
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
+
+  // Forma ochiq paytida yuklangan, lekin saqlanmay qolgan rasmlar (bekor qilinganda yoki
+  // boshqasi bilan almashtirilganda) forma yopilishi bilan Storage'dan o'chiriladi
+  const trackerRef = useRef({
+    uploaded: [] as string[],
+    saved: undefined as string | undefined,
+    remove: removeImage,
+  })
+  useEffect(() => {
+    trackerRef.current.remove = removeImage
+  })
+  useEffect(() => {
+    const tracker = trackerRef.current
+    return () => {
+      tracker.uploaded.filter((url) => url !== tracker.saved).forEach((url) => tracker.remove(url))
+      tracker.uploaded = []
+    }
+  }, [])
 
   const set = <K extends keyof FormState>(field: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [field]: value }))
@@ -94,7 +112,10 @@ function ProductForm({ product, onDone }: { product?: Product; onDone: () => voi
     try {
       const result = await uploadImage(await resizeImage(file))
       if ('error' in result) showToast(result.error, 'error')
-      else set('image', result.url)
+      else {
+        trackerRef.current.uploaded.push(result.url)
+        set('image', result.url)
+      }
     } catch {
       showToast('Не удалось загрузить изображение', 'error')
     } finally {
@@ -133,6 +154,7 @@ function ProductForm({ product, onDone }: { product?: Product; onDone: () => voi
     const error = product ? await updateProduct(product.id, input) : await createProduct(input)
     setSaving(false)
     if (error) return showToast(error, 'error')
+    trackerRef.current.saved = input.image
     showToast(product ? 'Изменения сохранены' : 'Товар добавлен')
     onDone()
   }

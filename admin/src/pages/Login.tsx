@@ -12,9 +12,12 @@ function Shell({ children }: { children: ReactNode }) {
     <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
       <div className="w-full max-w-sm">
         <div className="mb-6 flex flex-col items-center text-center">
-          <LogoMark className="size-12 text-gray-950" />
-          <p className="mt-3 text-lg font-bold tracking-tight text-gray-950">
-            cX<span className="font-medium text-gray-500">-shop</span>
+          <LogoMark className="size-14" />
+          <p className="mt-3 text-lg font-extrabold tracking-tight">
+            <span className="bg-gradient-to-br from-blue-700 to-rose-600 bg-clip-text text-transparent">
+              cX
+            </span>
+            <span className="font-semibold text-slate-500">-shop</span>
             <span className="ml-2 rounded-md bg-gray-950 px-1.5 py-0.5 align-middle text-[10px] font-bold tracking-wide text-white uppercase">
               Admin
             </span>

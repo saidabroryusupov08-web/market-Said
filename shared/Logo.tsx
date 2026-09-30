@@ -1,6 +1,6 @@
 import { useId } from 'react'
 
-// cX-shop logotipi: och kvadrat ichida to'q ko'k (navy) beysbol kepkasi, 3/4 burchakdan;
+// cX-shop logotipi: ko'k -> qizil gradientli kvadrat ichida oq konturli to'q ko'k (navy) beysbol kepkasi, 3/4 burchakdan;
 // old tomonida qo'lda yozilgandek oq "cX" (shrift emas — chiziqlar, shuning uchun har qanday
 // qurilmada bir xil ko'rinadi). Nom yozuvi ("cX-shop") ko'k -> qizil gradientda.
 // Favicon ham shu belgidan (public/favicon.svg va admin/public/favicon.svg) — o'zgartirsangiz
@@ -23,9 +23,9 @@ export function LogoMark({ className = 'size-8' }: { className?: string }) {
   return (
     <svg viewBox="0 0 64 64" aria-hidden="true" className={className}>
       <defs>
-        <linearGradient id={bg} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#f8fafc" />
-          <stop offset="1" stopColor="#e2e8f0" />
+        <linearGradient id={bg} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor={BRAND_FROM} />
+          <stop offset="1" stopColor={BRAND_TO} />
         </linearGradient>
         <linearGradient id={crown} x1="0" y1="0" x2="1" y2="0">
           <stop offset="0" stopColor="#1b2445" />
@@ -35,7 +35,8 @@ export function LogoMark({ className = 'size-8' }: { className?: string }) {
       </defs>
       <rect width="64" height="64" rx="16" fill={`url(#${bg})`} />
       <g transform="translate(0 3)">
-        <path fill={`url(#${crown})`} d={CROWN} />
+        {/* oq kontur: to'q kepka ko'k fonda ham aniq ajralib tursin */}
+        <path fill={`url(#${crown})`} stroke="#fff" strokeWidth="2.4" strokeOpacity=".9" d={CROWN} />
         {/* tikuvlar va havo teshikchalari */}
         <g fill="none" stroke="#34457a" strokeWidth=".9" strokeLinecap="round">
           <path d="M27.4 13.8C32.6 18.4 35.6 28 36 40.6" />
@@ -44,7 +45,7 @@ export function LogoMark({ className = 'size-8' }: { className?: string }) {
         <circle cx="20" cy="21.6" r="1" fill="#3b4c80" />
         <circle cx="36.2" cy="19.6" r="1" fill="#3b4c80" />
         {/* soyabon (kozirek) */}
-        <path fill="#151d38" d={VISOR} />
+        <path fill="#151d38" stroke="#fff" strokeWidth="2.4" strokeOpacity=".9" d={VISOR} />
         <path fill="none" stroke="#2c3a68" strokeWidth=".9" d="M27.6 40.8C37.6 40 49.4 40.6 57.2 43.8" />
         {/* tepadagi tugma */}
         <ellipse cx="27.4" cy="13.6" rx="3" ry="1.5" fill="#141b33" />

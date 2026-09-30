@@ -20,7 +20,7 @@ function Shell({ children }: { children: ReactNode }) {
               cX
             </span>
             <span className="font-semibold text-slate-500">-shop</span>
-            <span className="ml-2 rounded-md bg-gradient-to-br from-blue-700 to-rose-600 px-1.5 py-0.5 align-middle shadow-sm text-[10px] font-bold tracking-wide text-white uppercase">
+            <span className="ml-2 rounded-md bg-blue-700 px-1.5 py-0.5 align-middle shadow-sm text-[10px] font-bold tracking-wide text-white uppercase">
               Admin
             </span>
           </p>

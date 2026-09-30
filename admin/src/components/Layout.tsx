@@ -49,7 +49,7 @@ function Sidebar({
     <div className="flex h-full flex-col">
       <div className="flex h-16 items-center gap-2 px-5">
         <Logo />
-        <span className="rounded-md bg-gradient-to-br from-blue-700 to-rose-600 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-white uppercase shadow-sm">
+        <span className="rounded-md bg-blue-700 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-white uppercase shadow-sm">
           Admin
         </span>
       </div>

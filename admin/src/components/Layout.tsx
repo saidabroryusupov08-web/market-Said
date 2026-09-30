@@ -14,11 +14,12 @@ import {
   X,
 } from 'lucide-react'
 import Logo from '../../../shared/Logo'
-import { useAuth } from '../lib/auth'
+import { profileOf, useAuth } from '../lib/auth'
 import { useAdminData } from '../lib/data'
+import Avatar from './Avatar'
 import GlobalSearch from './GlobalSearch'
 import SecurityModal from './SecurityModal'
-import { iconBtn } from './ui'
+import { iconBtn } from './styles'
 
 // do'kon manzili (Vercel env: VITE_STORE_URL), menyudagi "Открыть магазин" uchun
 const STORE_URL = (import.meta.env.VITE_STORE_URL as string | undefined) || ''
@@ -33,6 +34,7 @@ function Sidebar({
   const { state, signOut } = useAuth()
   const { products, unread, newOrders } = useAdminData()
   const email = state.status === 'admin' ? (state.session.user.email ?? '') : ''
+  const profile = state.status === 'admin' ? profileOf(state.session) : null
   const mfaEnabled = state.status === 'admin' && state.mfaEnabled
 
   const links = [
@@ -47,7 +49,7 @@ function Sidebar({
     <div className="flex h-full flex-col">
       <div className="flex h-16 items-center gap-2 px-5">
         <Logo />
-        <span className="rounded-md bg-gray-950 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-white uppercase">
+        <span className="rounded-md bg-gradient-to-br from-blue-700 to-rose-600 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-white uppercase shadow-sm">
           Admin
         </span>
       </div>
@@ -114,14 +116,14 @@ function Sidebar({
               onNavigate?.()
               onOpenSecurity()
             }}
-            title="Безопасность: пароль и 2FA"
+            title="Профиль и безопасность: фото, имя, пароль, 2FA"
             className="flex min-w-0 flex-1 cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition hover:bg-gray-100"
           >
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-gray-950 text-xs font-semibold text-white uppercase">
-              {email.charAt(0) || 'A'}
-            </span>
+            <Avatar src={profile?.avatarUrl ?? null} name={profile?.displayName ?? email} />
             <span className="min-w-0 flex-1">
-              <span className="block truncate text-xs font-medium text-gray-950">{email}</span>
+              <span className="block truncate text-xs font-medium text-gray-950">
+                {profile?.displayName ?? email}
+              </span>
               <span className="flex items-center gap-1 text-[11px] text-gray-400">
                 <ShieldCheck className={`size-3 ${mfaEnabled ? 'text-green-600' : ''}`} />
                 {mfaEnabled ? '2FA включена' : 'Безопасность'}

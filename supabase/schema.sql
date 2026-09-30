@@ -162,6 +162,26 @@ create policy "rasmni faqat admin o'chiradi" on storage.objects
   for delete to authenticated
   using (bucket_id = 'product-images' and public.is_admin());
 
+-- ========== Sayt sozlamalari (bosh sahifa sarlavhasi, matni, rasmi) ==========
+-- Har doim bitta qator (id = 1). Bo'sh (null) maydon -> saytda standart qiymat.
+create table if not exists public.site_settings (
+  id int primary key default 1 check (id = 1),
+  hero_title text check (char_length(hero_title) <= 80),
+  hero_subtitle text check (char_length(hero_subtitle) <= 240),
+  hero_image text,
+  updated_at timestamptz not null default now()
+);
+insert into public.site_settings (id) values (1) on conflict (id) do nothing;
+alter table public.site_settings enable row level security;
+
+drop policy if exists "sozlamalarni hamma ko'radi" on public.site_settings;
+create policy "sozlamalarni hamma ko'radi" on public.site_settings
+  for select using (true);
+
+drop policy if exists "sozlamalarni faqat admin o'zgartiradi" on public.site_settings;
+create policy "sozlamalarni faqat admin o'zgartiradi" on public.site_settings
+  for update to authenticated using (public.is_admin()) with check (public.is_admin());
+
 -- ========== Admin akkauntini qo'shish ==========
 -- 1) Authentication -> Users -> "Add user" -> email + parol ("Auto Confirm User" belgilang)
 -- 2) Authentication -> Sign In / Providers -> "Allow new users to sign up" ni O'CHIRING

@@ -2,7 +2,7 @@ import { useMemo, useState, type ReactNode } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { ArrowDownRight, ArrowUpRight, ChevronLeft, ChevronRight, Download, Minus } from 'lucide-react'
 import BarChart, { CHART_COLOR } from '../components/BarChart'
-import { secondaryBtn } from '../components/ui'
+import { secondaryBtn } from '../components/styles'
 import {
   availableMonths,
   changePercent,

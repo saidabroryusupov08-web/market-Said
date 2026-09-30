@@ -19,7 +19,9 @@ market-Said/
 (`shared/search.ts` — transliteratsiya + inglizcha/o'zbekcha lug'at).
 
 **Admin panel:**
-- **Главная** — yangi buyurtmalar, 30 kunlik tushum va o'rtacha chek, so'nggi buyurtma va xabarlar
+- **Главная** — salomlashish (ism va rasm bilan), **do'kon bosh sahifasini tahrirlash** (katta rasm,
+  sarlavha, matn — jonli ko'rinish bilan), yangi buyurtmalar, 30 kunlik tushum va o'rtacha chek,
+  so'nggi buyurtma va xabarlar
 - **Заказы** — holatlar (Новый → В работе → Отправлен → Доставлен / Отменён), qidiruv (№, ism,
   telefon, manzil), tafsilot, admin izohi, CSV (Excel)
 - **Товары** — jadval, qidiruv (3 tilda), kategoriya va ko'rinish filtri, qo'shish/tahrirlash,
@@ -29,7 +31,10 @@ market-Said/
   buyurtmalar, o'rtacha chek, sotilgan dona, yetkazilgan summa va o'tgan oyga nisbatan o'zgarish (%),
   kunma-kun savdo, eng ko'p sotilgan mahsulotlar va kategoriyalar. Bekor qilingan buyurtmalar
   aylanmaga kirmaydi
-- Tepada umumiy qidiruv (Ctrl+K): buyurtma, mahsulot va email; «Безопасность»: parol va 2FA
+- Tepada umumiy qidiruv (Ctrl+K): buyurtma, mahsulot va email
+- **«Профиль и безопасность»** (chap pastda ismingizni bosing): profil rasmi va ism, parolni
+  almashtirish, 2FA. Muhim amallar (mahsulot/buyurtma/xabarni o'chirish, 2FA'ni o'chirish) oldidan
+  **parol qayta so'raladi**; to'g'ri kiritilgach 5 daqiqa qayta so'ralmaydi
 
 Buyurtma narxini server bazadagi mahsulotdan **o'zi** hisoblaydi — brauzerda narxni o'zgartirib,
 arzonga buyurtma berib bo'lmaydi; yashirilgan mahsulot yoki yo'q o'lchamga buyurtma rad etiladi.

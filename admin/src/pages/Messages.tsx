@@ -12,13 +12,8 @@ import {
 } from 'lucide-react'
 import { formatDateTime } from '../lib/format'
 import { useAdminData, type Message } from '../lib/data'
-import {
-  ConfirmDialog,
-  iconBtn,
-  inputClass,
-  secondaryBtn,
-  useToast,
-} from '../components/ui'
+import { ConfirmDialog, useToast } from '../components/ui'
+import { iconBtn, inputClass, secondaryBtn } from '../components/styles'
 
 const gmailLink = (email: string) =>
   `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(email)}`
@@ -266,6 +261,7 @@ function Messages() {
 
       {toDelete && (
         <ConfirmDialog
+          withPassword
           message={`Удалить сообщение от ${toDelete.email}?`}
           onConfirm={confirmDelete}
           onCancel={() => setToDelete(null)}

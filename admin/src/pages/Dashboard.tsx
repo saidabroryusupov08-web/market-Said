@@ -1,10 +1,25 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowRight, Download, Inbox, Package, ShoppingBag, Wallet } from 'lucide-react'
+import {
+  ArrowRight,
+  Download,
+  ExternalLink,
+  Inbox,
+  Package,
+  Pencil,
+  ShoppingBag,
+  Wallet,
+} from 'lucide-react'
+import { resolveImage } from '../../../shared/images'
+import { profileOf, useAuth } from '../lib/auth'
+import { money } from '../lib/analytics'
 import { formatDateTime } from '../lib/format'
 import { useAdminData } from '../lib/data'
 import { StatusBadge } from './Orders'
-import { primaryBtn, useToast } from '../components/ui'
+import Avatar from '../components/Avatar'
+import HeroEditor from '../components/HeroEditor'
+import { useToast } from '../components/ui'
+import { primaryBtn, secondaryBtn } from '../components/styles'
 
 const DAY = 24 * 60 * 60 * 1000
 
@@ -44,9 +59,53 @@ function StatCard({
   )
 }
 
+const STORE_URL = (import.meta.env.VITE_STORE_URL as string | undefined) || ''
+
+function greeting(hour: number) {
+  if (hour < 5) return 'Доброй ночи'
+  if (hour < 12) return 'Доброе утро'
+  if (hour < 18) return 'Добрый день'
+  return 'Добрый вечер'
+}
+
+// do'kon bosh sahifasi: hozir saytda nima turgani + tahrirlash tugmasi
+function SiteHeroCard() {
+  const { siteSettings } = useAdminData()
+  const [editing, setEditing] = useState(false)
+  return (
+    <section className="flex flex-col gap-4 rounded-xl border border-gray-200 bg-white p-5 sm:flex-row sm:items-center">
+      <img
+        src={resolveImage(siteSettings.heroImage)}
+        alt=""
+        className="size-20 shrink-0 rounded-lg bg-gray-100 object-cover"
+      />
+      <div className="min-w-0 flex-1">
+        <p className="text-xs font-medium text-gray-400">Главная страница сайта</p>
+        <p className="truncate font-semibold text-gray-950">{siteSettings.heroTitle}</p>
+        <p className="line-clamp-2 text-sm text-gray-500">{siteSettings.heroSubtitle}</p>
+      </div>
+      <div className="flex shrink-0 gap-2">
+        {STORE_URL && (
+          <a href={STORE_URL} target="_blank" rel="noopener noreferrer" className={secondaryBtn}>
+            <ExternalLink className="size-4" />
+            Открыть
+          </a>
+        )}
+        <button type="button" onClick={() => setEditing(true)} className={primaryBtn}>
+          <Pencil className="size-4" />
+          Изменить фото и текст
+        </button>
+      </div>
+      {editing && <HeroEditor onClose={() => setEditing(false)} />}
+    </section>
+  )
+}
+
 function Dashboard() {
   const { products, messages, orders, productsLoaded, unread, newOrders, importDefaults } =
     useAdminData()
+  const { state } = useAuth()
+  const profile = state.status === 'admin' ? profileOf(state.session) : null
   const showToast = useToast()
   const [importing, setImporting] = useState(false)
 
@@ -81,6 +140,22 @@ function Dashboard() {
 
   return (
     <div className="flex flex-col gap-6">
+      {profile && (
+        <div className="flex items-center gap-3">
+          <Avatar src={profile.avatarUrl} name={profile.displayName} className="size-12 text-lg" />
+          <div className="min-w-0">
+            <h2 className="truncate text-xl font-semibold text-gray-950">
+              {greeting(new Date(now).getHours())}, {profile.name || 'администратор'}!
+            </h2>
+            <p className="text-sm text-gray-500">
+              {new Date(now).toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' })}
+            </p>
+          </div>
+        </div>
+      )}
+
+      <SiteHeroCard />
+
       {productsLoaded && products.length === 0 && (
         <div className="flex flex-col gap-4 rounded-xl border border-blue-200 bg-blue-50 p-5 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -108,8 +183,8 @@ function Dashboard() {
         />
         <StatCard
           label="Выручка за 30 дней"
-          value={`$${revenue.toFixed(2)}`}
-          hint={`${monthOrders.length} заказов · средний чек $${averageCheck.toFixed(2)}`}
+          value={money(revenue)}
+          hint={`${monthOrders.length} заказов · средний чек ${money(averageCheck)}`}
           Icon={Wallet}
           to="/orders"
         />

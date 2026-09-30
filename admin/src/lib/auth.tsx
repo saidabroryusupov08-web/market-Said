@@ -38,7 +38,27 @@ type AuthContextValue = {
   startTotpEnrollment: () => Promise<TotpEnrollment | { error: string }>
   confirmTotpEnrollment: (factorId: string, code: string) => Result
   disableTotp: () => Result
+  // muhim amallardan oldin parolni qayta tekshirish
+  verifyPassword: (password: string) => Result
+  needsPassword: () => boolean
+  updateProfile: (profile: { name: string; avatarUrl: string | null }) => Result
 }
+
+// admin ko'rsatadigan ism va rasm (bo'lmasa email)
+// eslint-disable-next-line react-refresh/only-export-components
+export function profileOf(session: Session) {
+  const meta = (session.user.user_metadata ?? {}) as { full_name?: string; avatar_url?: string }
+  const email = session.user.email ?? ''
+  return {
+    email,
+    name: meta.full_name?.trim() || '',
+    displayName: meta.full_name?.trim() || email,
+    avatarUrl: meta.avatar_url || null,
+  }
+}
+
+// parol to'g'ri kiritilgach, shuncha vaqt ichida muhim amallar uchun qayta so'ralmaydi
+const REAUTH_GRACE_MS = 5 * 60 * 1000
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
@@ -216,23 +236,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return null
   }
 
-  // ----- parolni almashtirish (panel ichidan) -----
-  const changePassword = async (current: string, next: string) => {
+  // ----- parolni qayta tekshirish (muhim amallardan oldin) -----
+  // Parol alohida, vaqtinchalik ulanish orqali tekshiriladi: asosiy sessiya (va uning 2FA
+  // darajasi) o'zgarmaydi. To'g'ri kiritilsa, keyingi REAUTH_GRACE_MS davomida qayta so'ralmaydi.
+  const lastVerifiedRef = useRef(0)
+  const verifyPassword = async (password: string) => {
     if (state.status !== 'admin') return 'Нет доступа'
-    // joriy parol alohida, vaqtinchalik ulanish orqali tekshiriladi: asosiy sessiya
-    // (va uning 2FA darajasi) o'zgarmaydi
     const verifier = createClient(supabaseUrl!, supabaseAnonKey!, {
       auth: { persistSession: false, autoRefreshToken: false, storageKey: 'cx-admin-verify' },
     })
-    const { error: wrong } = await verifier.auth.signInWithPassword({
+    const { error } = await verifier.auth.signInWithPassword({
       email: state.session.user.email ?? '',
-      password: current,
+      password,
     })
-    if (wrong) return wrong.status === 400 ? 'Текущий пароль указан неверно' : describe(wrong, 'Ошибка')
+    if (error) return error.status === 400 ? 'Неверный пароль' : describe(error, 'Ошибка проверки')
     await verifier.auth.signOut({ scope: 'local' })
+    lastVerifiedRef.current = Date.now()
+    return null
+  }
+  const needsPassword = () => Date.now() - lastVerifiedRef.current > REAUTH_GRACE_MS
 
+  // ----- parolni almashtirish (panel ichidan) -----
+  const changePassword = async (current: string, next: string) => {
+    const wrong = await verifyPassword(current)
+    if (wrong) return wrong === 'Неверный пароль' ? 'Текущий пароль указан неверно' : wrong
     const { error } = await supabase!.auth.updateUser({ password: next })
     return describe(error, 'Не удалось изменить пароль')
+  }
+
+  // ----- profil: ism va rasm (Supabase foydalanuvchi ma'lumotida saqlanadi) -----
+  const updateProfile = async (profile: { name: string; avatarUrl: string | null }) => {
+    const { error } = await supabase!.auth.updateUser({
+      data: { full_name: profile.name.trim() || null, avatar_url: profile.avatarUrl },
+    })
+    if (error) return describe(error, 'Не удалось сохранить профиль')
+    await refresh()
+    return null
   }
 
   // ----- 2FA (Google Authenticator va shu kabi ilovalar) -----
@@ -290,6 +329,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         startTotpEnrollment,
         confirmTotpEnrollment,
         disableTotp,
+        verifyPassword,
+        needsPassword,
+        updateProfile,
       }}
     >
       {children}

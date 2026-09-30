@@ -4,7 +4,9 @@ import { resolveImage } from '../../../shared/images'
 import { autoSizePrice } from '../../../shared/price'
 import { categories, NAV_TAGS, type NavTag, type Product } from '../../../shared/products'
 import { useAdminData, type ProductInput } from '../lib/data'
-import { inputClass, labelClass, primaryBtn, secondaryBtn, useToast } from './ui'
+import { resizeImage } from '../lib/image'
+import { useToast } from './ui'
+import { inputClass, labelClass, primaryBtn, secondaryBtn } from './styles'
 
 // "S, M, L" -> ['S', 'M', 'L']
 const splitList = (text: string) =>
@@ -12,35 +14,6 @@ const splitList = (text: string) =>
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean)
-
-// rasm yuklashdan oldin kichraytiriladi (tezroq ochiladi, Storage joyi tejaladi)
-function resizeImage(file: File, maxSize = 1000): Promise<Blob> {
-  return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file)
-    const img = new Image()
-    img.onload = () => {
-      const scale = Math.min(1, maxSize / Math.max(img.width, img.height))
-      const canvas = document.createElement('canvas')
-      canvas.width = Math.round(img.width * scale)
-      canvas.height = Math.round(img.height * scale)
-      const ctx = canvas.getContext('2d')!
-      ctx.fillStyle = '#fff'
-      ctx.fillRect(0, 0, canvas.width, canvas.height)
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
-      URL.revokeObjectURL(url)
-      canvas.toBlob(
-        (blob) => (blob ? resolve(blob) : reject(new Error('toBlob'))),
-        'image/jpeg',
-        0.85,
-      )
-    }
-    img.onerror = () => {
-      URL.revokeObjectURL(url)
-      reject(new Error('Не удалось прочитать изображение'))
-    }
-    img.src = url
-  })
-}
 
 type FormState = {
   name: string

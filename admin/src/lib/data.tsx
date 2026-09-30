@@ -14,6 +14,13 @@ import {
   toRow,
   type ProductRow,
 } from '../../../shared/supabase'
+import {
+  DEFAULT_SITE_SETTINGS,
+  settingsFromRow,
+  settingsToRow,
+  type SiteSettings,
+  type SiteSettingsRow,
+} from '../../../shared/siteSettings'
 import type { Order } from './orders'
 
 export type { Order, OrderStatus } from './orders'
@@ -62,6 +69,8 @@ type AdminDataValue = {
   deleteMessage: (id: number) => Result
   updateOrder: (id: number, changes: Partial<Pick<Order, 'status' | 'admin_note'>>) => Result
   deleteOrder: (id: number) => Result
+  siteSettings: SiteSettings
+  saveSiteSettings: (next: SiteSettings) => Result
 }
 
 // yangi xabar va buyurtmalar shu oraliqda o'zi tekshiriladi
@@ -88,6 +97,7 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
   const [orders, setOrders] = useState<Order[]>([])
   const [ordersLoaded, setOrdersLoaded] = useState(false)
   const [loadError, setLoadError] = useState('')
+  const [siteSettings, setSiteSettings] = useState<SiteSettings>(DEFAULT_SITE_SETTINGS)
 
   const loadProducts = useCallback(async () => {
     const { data, error } = await db
@@ -122,9 +132,14 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
     setOrdersLoaded(true)
   }, [db])
 
+  const loadSettings = useCallback(async () => {
+    const { data, error } = await db.from('site_settings').select('*').eq('id', 1).maybeSingle()
+    if (!error) setSiteSettings(settingsFromRow(data as SiteSettingsRow | null))
+  }, [db])
+
   const reload = useCallback(async () => {
-    await Promise.all([loadProducts(), loadMessages(), loadOrders()])
-  }, [loadProducts, loadMessages, loadOrders])
+    await Promise.all([loadProducts(), loadMessages(), loadOrders(), loadSettings()])
+  }, [loadProducts, loadMessages, loadOrders, loadSettings])
 
   useEffect(() => {
     // effekt ichida to'g'ridan setState chaqirilmasligi uchun taymer orqali
@@ -239,6 +254,17 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
     return describe(error)
   }
 
+  // ----- sayt bosh sahifasi -----
+  const saveSiteSettings = async (next: SiteSettings) => {
+    const { error } = await db.from('site_settings').update(settingsToRow(next)).eq('id', 1)
+    if (error) return describe(error)
+    const old = siteSettings.heroImage
+    setSiteSettings(settingsFromRow({ id: 1, ...settingsToRow(next) }))
+    // eski yuklangan rasm Storage'da keraksiz qolmasin
+    if (old !== next.heroImage) await removeImage(old)
+    return null
+  }
+
   const deleteOrder = async (id: number) => {
     const { error } = await db.from('orders').delete().eq('id', id)
     if (error) return describe(error)
@@ -259,6 +285,8 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
         unread: messages.filter((m) => !m.is_read).length,
         newOrders: orders.filter((o) => o.status === 'new').length,
         updateOrder,
+        siteSettings,
+        saveSiteSettings,
         deleteOrder,
         reload,
         createProduct,

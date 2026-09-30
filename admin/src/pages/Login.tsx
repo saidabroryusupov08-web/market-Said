@@ -1,9 +1,11 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
-import { ArrowLeft, Eye, EyeOff, KeyRound, Lock, MailCheck, ShieldAlert, ShieldCheck } from 'lucide-react'
+import { ArrowLeft, KeyRound, Lock, MailCheck, ShieldAlert, ShieldCheck } from 'lucide-react'
 import { LogoMark } from '../../../shared/Logo'
 import { useAuth } from '../lib/auth'
 import { validatePassword } from '../lib/password'
-import { inputClass, labelClass, primaryBtn, secondaryBtn } from '../components/ui'
+import PasswordInput from '../components/PasswordInput'
+import { inputClass, labelClass, primaryBtn, secondaryBtn } from '../components/styles'
+
 
 // Kirishga oid barcha ekranlar: login, parolni tiklash, 2FA kodi, yangi parol.
 
@@ -18,7 +20,7 @@ function Shell({ children }: { children: ReactNode }) {
               cX
             </span>
             <span className="font-semibold text-slate-500">-shop</span>
-            <span className="ml-2 rounded-md bg-gray-950 px-1.5 py-0.5 align-middle text-[10px] font-bold tracking-wide text-white uppercase">
+            <span className="ml-2 rounded-md bg-gradient-to-br from-blue-700 to-rose-600 px-1.5 py-0.5 align-middle shadow-sm text-[10px] font-bold tracking-wide text-white uppercase">
               Admin
             </span>
           </p>
@@ -49,45 +51,6 @@ const ErrorText = ({ children }: { children: ReactNode }) =>
       {children}
     </p>
   ) : null
-
-export function PasswordInput({
-  id,
-  value,
-  onChange,
-  autoComplete,
-  autoFocus,
-  invalid,
-}: {
-  id: string
-  value: string
-  onChange: (value: string) => void
-  autoComplete: string
-  autoFocus?: boolean
-  invalid?: boolean
-}) {
-  const [visible, setVisible] = useState(false)
-  return (
-    <div className="relative">
-      <input
-        id={id}
-        type={visible ? 'text' : 'password'}
-        autoComplete={autoComplete}
-        autoFocus={autoFocus}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className={`${inputClass} pr-10 ${invalid ? 'border-red-400' : ''}`}
-      />
-      <button
-        type="button"
-        aria-label={visible ? 'Скрыть пароль' : 'Показать пароль'}
-        onClick={() => setVisible((v) => !v)}
-        className="absolute top-1/2 right-2.5 -translate-y-1/2 cursor-pointer text-gray-400 hover:text-gray-700"
-      >
-        {visible ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-      </button>
-    </div>
-  )
-}
 
 // 6 xonali kod (Google Authenticator va h.k.)
 export function CodeInput({

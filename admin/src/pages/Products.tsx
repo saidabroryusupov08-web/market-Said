@@ -7,7 +7,8 @@ import { categories, discountPercent, NAV_TAGS, type Product } from '../../../sh
 import { createMatcher } from '../../../shared/search'
 import { useAdminData, type ProductInput } from '../lib/data'
 import ProductForm from '../components/ProductForm'
-import { ConfirmDialog, iconBtn, inputClass, Modal, primaryBtn, useToast } from '../components/ui'
+import { ConfirmDialog, Modal, useToast } from '../components/ui'
+import { iconBtn, inputClass, primaryBtn } from '../components/styles'
 
 const tagLabel = Object.fromEntries(NAV_TAGS.map((t) => [t.value, t.label]))
 
@@ -261,6 +262,7 @@ function Products() {
 
       {toDelete && (
         <ConfirmDialog
+          withPassword
           message={`Удалить «${toDelete.name}»? Товар исчезнет с сайта. Это действие нельзя отменить.`}
           onConfirm={confirmDelete}
           onCancel={() => setToDelete(null)}

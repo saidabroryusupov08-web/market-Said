@@ -1,9 +1,15 @@
-import { useState, type FormEvent } from 'react'
-import { ShieldCheck, ShieldOff, Smartphone } from 'lucide-react'
-import { useAuth, type TotpEnrollment } from '../lib/auth'
+import { useEffect, useState, type FormEvent } from 'react'
+import type { Session } from '@supabase/supabase-js'
+import { Camera, ShieldCheck, ShieldOff, Smartphone, Trash2 } from 'lucide-react'
+import { profileOf, useAuth, type TotpEnrollment } from '../lib/auth'
+import { useAdminData } from '../lib/data'
+import { resizeImage } from '../lib/image'
 import { validatePassword } from '../lib/password'
-import { CodeInput, PasswordInput } from '../pages/Login'
-import { ConfirmDialog, labelClass, Modal, primaryBtn, secondaryBtn, useToast } from './ui'
+import Avatar from './Avatar'
+import PasswordInput from './PasswordInput'
+import { CodeInput } from '../pages/Login'
+import { ConfirmDialog, Modal, useToast } from './ui'
+import { inputClass, labelClass, primaryBtn, secondaryBtn } from './styles'
 
 function ChangePassword() {
   const { changePassword } = useAuth()
@@ -205,6 +211,7 @@ function TwoFactor({ enabled }: { enabled: boolean }) {
 
       {confirmOff && (
         <ConfirmDialog
+          withPassword
           message="Отключить двухфакторную защиту? Для входа снова будет достаточно только пароля."
           confirmLabel="Да, отключить"
           onConfirm={turnOff}
@@ -215,17 +222,132 @@ function TwoFactor({ enabled }: { enabled: boolean }) {
   )
 }
 
+const NAME_MAX = 40
+
+// ism va rasm: saqlash bosilgunicha hech narsa yuklanmaydi (bekor qilinsa Storage'da ortiqcha fayl qolmaydi)
+function Profile({ session }: { session: Session }) {
+  const { updateProfile } = useAuth()
+  const { uploadImage, removeImage } = useAdminData()
+  const showToast = useToast()
+  const current = profileOf(session)
+  const [name, setName] = useState(current.name)
+  // undefined — o'zgarmagan, null — o'chiriladi, Blob — yangi rasm
+  const [pending, setPending] = useState<Blob | null | undefined>(undefined)
+  const [preview, setPreview] = useState<string | null>(current.avatarUrl)
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    // tanlangan faylning vaqtinchalik ko'rinishi tozalanadi
+    return () => {
+      if (preview?.startsWith('blob:')) URL.revokeObjectURL(preview)
+    }
+  }, [preview])
+
+  const pick = async (file?: File) => {
+    if (!file) return
+    if (!file.type.startsWith('image/')) return showToast('Выберите файл изображения', 'error')
+    try {
+      const blob = await resizeImage(file, 256, true)
+      setPending(blob)
+      setPreview(URL.createObjectURL(blob))
+    } catch {
+      showToast('Не удалось прочитать изображение', 'error')
+    }
+  }
+
+  const changed = name.trim() !== current.name || pending !== undefined
+
+  const save = async (e: FormEvent) => {
+    e.preventDefault()
+    if (!changed || saving) return
+    setSaving(true)
+    let avatarUrl = current.avatarUrl
+    if (pending instanceof Blob) {
+      const result = await uploadImage(pending)
+      if ('error' in result) {
+        setSaving(false)
+        return showToast(result.error, 'error')
+      }
+      avatarUrl = result.url
+    } else if (pending === null) {
+      avatarUrl = null
+    }
+    const error = await updateProfile({ name: name.slice(0, NAME_MAX), avatarUrl })
+    setSaving(false)
+    if (error) return showToast(error, 'error')
+    // eski rasm Storage'da keraksiz qolmasin
+    if (current.avatarUrl && current.avatarUrl !== avatarUrl) await removeImage(current.avatarUrl)
+    setPending(undefined)
+    showToast('Профиль сохранён')
+  }
+
+  return (
+    <form onSubmit={save} noValidate className="flex flex-col gap-3">
+      <h3 className="text-sm font-semibold text-gray-950">Профиль</h3>
+      <div className="flex items-center gap-4">
+        <Avatar src={preview} name={name || current.email} className="size-16 text-xl" />
+        <div className="flex flex-wrap gap-2">
+          <label className={`${secondaryBtn} h-8 text-xs`}>
+            <Camera className="size-3.5" />
+            {preview ? 'Заменить фото' : 'Загрузить фото'}
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                pick(e.target.files?.[0])
+                e.target.value = ''
+              }}
+            />
+          </label>
+          {preview && (
+            <button
+              type="button"
+              onClick={() => {
+                setPending(null)
+                setPreview(null)
+              }}
+              className={`${secondaryBtn} h-8 text-xs text-red-600 hover:bg-red-50`}
+            >
+              <Trash2 className="size-3.5" />
+              Удалить фото
+            </button>
+          )}
+        </div>
+      </div>
+      <div>
+        <label className={labelClass} htmlFor="profile-name">
+          Имя (показывается в меню и на главной)
+        </label>
+        <input
+          id="profile-name"
+          maxLength={NAME_MAX}
+          placeholder="Например: Саидаброр"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          className={inputClass}
+        />
+      </div>
+      <p className="flex items-center gap-1.5 text-xs text-gray-400">
+        <ShieldCheck className="size-3.5" />
+        {current.email}
+      </p>
+      <button type="submit" disabled={!changed || saving} className={`${primaryBtn} self-start`}>
+        {saving ? 'Сохранение...' : 'Сохранить профиль'}
+      </button>
+    </form>
+  )
+}
+
 function SecurityModal({ onClose }: { onClose: () => void }) {
   const { state } = useAuth()
   if (state.status !== 'admin') return null
 
   return (
-    <Modal title="Безопасность" onClose={onClose} width="max-w-lg">
+    <Modal title="Профиль и безопасность" onClose={onClose} width="max-w-lg">
       <div className="flex flex-col gap-6 p-5">
-        <div className="flex items-center gap-2.5 rounded-lg bg-gray-50 px-3 py-2.5">
-          <ShieldCheck className="size-4 shrink-0 text-gray-500" />
-          <span className="min-w-0 truncate text-sm text-gray-700">{state.session.user.email}</span>
-        </div>
+        <Profile session={state.session} />
+        <div className="border-t border-gray-100" />
         <ChangePassword />
         <div className="border-t border-gray-100" />
         <TwoFactor enabled={state.mfaEnabled} />

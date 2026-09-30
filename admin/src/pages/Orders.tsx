@@ -6,7 +6,8 @@ import { createMatcher } from '../../../shared/search'
 import { useAdminData } from '../lib/data'
 import { ORDER_STATUSES, type Order, type OrderStatus } from '../lib/orders'
 import { formatDateTime } from '../lib/format'
-import { ConfirmDialog, inputClass, labelClass, Modal, primaryBtn, secondaryBtn, useToast } from '../components/ui'
+import { ConfirmDialog, Modal, useToast } from '../components/ui'
+import { inputClass, labelClass, primaryBtn, secondaryBtn } from '../components/styles'
 
 const statusInfo = (status: OrderStatus) =>
   ORDER_STATUSES.find((s) => s.value === status) ?? ORDER_STATUSES[0]
@@ -195,6 +196,7 @@ function OrderDetails({ order, onClose }: { order: Order; onClose: () => void })
 
       {confirmDelete && (
         <ConfirmDialog
+          withPassword
           message={`Удалить заказ №${order.id}? Лучше поставить статус «Отменён» — так он останется в истории.`}
           onConfirm={remove}
           onCancel={() => setConfirmDelete(false)}

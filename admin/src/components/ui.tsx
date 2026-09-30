@@ -4,20 +4,14 @@ import {
   useContext,
   useEffect,
   useState,
+  type FormEvent,
   type ReactNode,
 } from 'react'
-import { AlertTriangle, CheckCircle2, X, XCircle } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, Lock, X, XCircle } from 'lucide-react'
+import { useAuth } from '../lib/auth'
+import PasswordInput from './PasswordInput'
+import { iconBtn, secondaryBtn } from './styles'
 
-// ---------- umumiy klasslar ----------
-export const inputClass =
-  'h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm outline-none transition focus:border-blue-500 focus:shadow-[0_0_0_4px_rgba(59,130,246,0.2)]'
-export const labelClass = 'mb-1 block text-xs font-medium text-gray-500'
-export const primaryBtn =
-  'inline-flex h-10 cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-gray-950 px-4 text-sm font-semibold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:bg-gray-400'
-export const secondaryBtn =
-  'inline-flex h-9 cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 text-sm font-medium text-gray-700 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50'
-export const iconBtn =
-  'flex size-8 cursor-pointer items-center justify-center rounded-lg text-gray-500 transition hover:bg-gray-100 hover:text-gray-950'
 
 // ---------- toast (pastda chiqadigan qisqa xabar) ----------
 type Toast = { id: number; text: string; kind: 'success' | 'error' }
@@ -112,21 +106,52 @@ export function Modal({
 }
 
 // ---------- o'chirishni tasdiqlash ----------
+// withPassword: muhim amal (o'chirish, 2FA'ni o'chirish) — parol qayta so'raladi.
+// Oxirgi 5 daqiqada parol to'g'ri kiritilgan bo'lsa, qayta so'ralmaydi (auth.tsx: REAUTH_GRACE_MS).
 export function ConfirmDialog({
   message,
   confirmLabel = 'Да, удалить',
   onConfirm,
   onCancel,
+  withPassword = false,
 }: {
   message: string
   confirmLabel?: string
   onConfirm: () => void
   onCancel: () => void
+  withPassword?: boolean
 }) {
+  const { verifyPassword, needsPassword } = useAuth()
+  // oyna ochilgan paytdagi holat: keyin taymer o'tib ketsa ham forma o'zgarmaydi
+  const [askPassword] = useState(() => withPassword && needsPassword())
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [checking, setChecking] = useState(false)
+
+  const confirm = async (e?: FormEvent) => {
+    e?.preventDefault()
+    if (checking) return
+    if (askPassword) {
+      if (!password) return setError('Введите пароль')
+      setChecking(true)
+      const problem = await verifyPassword(password)
+      setChecking(false)
+      if (problem) {
+        setError(problem)
+        setPassword('')
+        return
+      }
+    }
+    onConfirm()
+  }
+
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4" onClick={onCancel}>
-      <div
+      <form
         role="alertdialog"
+        aria-label="Подтверждение"
+        onSubmit={confirm}
+        noValidate
         className="w-full max-w-sm animate-[zoom-in_150ms_ease-out] rounded-xl bg-white p-5 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
@@ -134,21 +159,48 @@ export function ConfirmDialog({
           <AlertTriangle className="size-5" />
           <h3 className="text-base font-semibold text-gray-950">Подтверждение</h3>
         </div>
-        <p className="mb-5 text-sm text-gray-600">{message}</p>
+        <p className="mb-4 text-sm text-gray-600">{message}</p>
+        {askPassword && (
+          <div className="mb-4">
+            <label
+              className="mb-1 flex items-center gap-1.5 text-xs font-medium text-gray-500"
+              htmlFor="confirm-password-check"
+            >
+              <Lock className="size-3.5" />
+              Для этого действия введите ваш пароль
+            </label>
+            <PasswordInput
+              id="confirm-password-check"
+              autoComplete="current-password"
+              autoFocus
+              value={password}
+              invalid={!!error}
+              onChange={(v) => {
+                setPassword(v)
+                setError('')
+              }}
+            />
+            {error && (
+              <p role="alert" className="mt-1.5 text-xs text-red-600">
+                {error}
+              </p>
+            )}
+          </div>
+        )}
         <div className="flex justify-end gap-2">
           <button type="button" onClick={onCancel} className={secondaryBtn}>
             Отмена
           </button>
           <button
-            type="button"
-            autoFocus
-            onClick={onConfirm}
-            className="h-9 cursor-pointer rounded-lg bg-red-600 px-3.5 text-sm font-semibold text-white transition hover:bg-red-700"
+            type="submit"
+            autoFocus={!askPassword}
+            disabled={checking}
+            className="h-9 cursor-pointer rounded-lg bg-red-600 px-3.5 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {confirmLabel}
+            {checking ? 'Проверка...' : confirmLabel}
           </button>
         </div>
-      </div>
+      </form>
     </div>
   )
 }

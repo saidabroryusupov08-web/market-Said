@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import {
+  BarChart3,
   ExternalLink,
   Inbox,
   LayoutDashboard,
@@ -39,6 +40,7 @@ function Sidebar({
     { to: '/orders', label: 'Заказы', Icon: ShoppingBag, badge: newOrders || null, highlight: true },
     { to: '/products', label: 'Товары', Icon: Package, badge: products.length || null },
     { to: '/messages', label: 'Сообщения', Icon: Inbox, badge: unread || null, highlight: true },
+    { to: '/analytics', label: 'Аналитика', Icon: BarChart3, badge: null },
   ]
 
   return (
@@ -146,6 +148,7 @@ const titles: Record<string, string> = {
   '/orders': 'Заказы',
   '/products': 'Товары',
   '/messages': 'Сообщения',
+  '/analytics': 'Аналитика',
 }
 
 function Layout({ children }: { children: ReactNode }) {

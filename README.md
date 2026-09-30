@@ -25,6 +25,10 @@ market-Said/
 - **Товары** — jadval, qidiruv (3 tilda), kategoriya va ko'rinish filtri, qo'shish/tahrirlash,
   o'lcham narxlari, **chegirma (eski narx)**, **saytdan yashirish** (bir bosishda), rasm yuklash
 - **Сообщения** — obunachilar, o'qildi belgisi, CSV
+- **Аналитика** — oylik aylanma (12 oylik grafik + jadval + CSV); tanlangan oy uchun aylanma,
+  buyurtmalar, o'rtacha chek, sotilgan dona, yetkazilgan summa va o'tgan oyga nisbatan o'zgarish (%),
+  kunma-kun savdo, eng ko'p sotilgan mahsulotlar va kategoriyalar. Bekor qilingan buyurtmalar
+  aylanmaga kirmaydi
 - Tepada umumiy qidiruv (Ctrl+K): buyurtma, mahsulot va email; «Безопасность»: parol va 2FA
 
 Buyurtma narxini server bazadagi mahsulotdan **o'zi** hisoblaydi — brauzerda narxni o'zgartirib,

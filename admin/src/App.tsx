@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './lib/auth'
 import { AdminDataProvider } from './lib/data'
 import Layout from './components/Layout'
 import { ToastProvider } from './components/ui'
+import Analytics from './pages/Analytics'
 import Dashboard from './pages/Dashboard'
 import Login, { MfaChallenge, NotAdmin, NotConfigured, ResetPassword } from './pages/Login'
 import Messages from './pages/Messages'
@@ -34,6 +35,7 @@ function Gate() {
           <Route path="/orders" element={<Orders />} />
           <Route path="/products" element={<Products />} />
           <Route path="/messages" element={<Messages />} />
+          <Route path="/analytics" element={<Analytics />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Layout>

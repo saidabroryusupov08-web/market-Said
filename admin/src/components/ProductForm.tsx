@@ -6,7 +6,7 @@ import { categories, NAV_TAGS, type NavTag, type Product } from '../../../shared
 import { useAdminData, type ProductInput } from '../lib/data'
 import { resizeImage } from '../lib/image'
 import { useToast } from './ui'
-import { inputClass, labelClass, primaryBtn, secondaryBtn } from './styles'
+import { glassChip, inputClass, labelClass, primaryBtn, secondaryBtn } from './styles'
 
 // "S, M, L" -> ['S', 'M', 'L']
 const splitList = (text: string) =>
@@ -368,7 +368,7 @@ function ProductForm({ product, onDone }: { product?: Product; onDone: () => voi
                 }
                 className={`cursor-pointer rounded-full border px-3 py-1 text-xs font-medium transition ${
                   on
-                    ? 'border-gray-950 bg-gray-950 text-white'
+                    ? glassChip
                     : 'border-gray-300 text-gray-600 hover:bg-gray-100'
                 }`}
               >

@@ -7,7 +7,7 @@ import { useAdminData } from '../lib/data'
 import { ORDER_STATUSES, type Order, type OrderStatus } from '../lib/orders'
 import { formatDateTime } from '../lib/format'
 import { ConfirmDialog, Modal, useToast } from '../components/ui'
-import { inputClass, labelClass, primaryBtn, secondaryBtn } from '../components/styles'
+import { alertBadge, glassChip, inputClass, labelClass, primaryBtn, secondaryBtn } from '../components/styles'
 
 const statusInfo = (status: OrderStatus) =>
   ORDER_STATUSES.find((s) => s.value === status) ?? ORDER_STATUSES[0]
@@ -87,7 +87,7 @@ function OrderDetails({ order, onClose }: { order: Order; onClose: () => void })
                 onClick={() => setStatus(s.value)}
                 className={`cursor-pointer rounded-full border px-3 py-1 text-xs font-medium transition ${
                   order.status === s.value
-                    ? 'border-gray-950 bg-gray-950 text-white'
+                    ? glassChip
                     : 'border-gray-300 text-gray-600 hover:bg-gray-100'
                 }`}
               >
@@ -271,7 +271,7 @@ function Orders() {
             {t.label}
             <span
               className={`rounded-full px-1.5 py-0.5 text-[10px] leading-none font-semibold ${
-                t.value === 'new' && t.count > 0 ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-500'
+                t.value === 'new' && t.count > 0 ? alertBadge : 'bg-gray-100 text-gray-500'
               }`}
             >
               {t.count}
@@ -326,7 +326,7 @@ function Orders() {
                 <tr
                   key={o.id}
                   onClick={() => updateParam('id', String(o.id))}
-                  className={`cursor-pointer transition hover:bg-gray-50 ${o.status === 'new' ? 'bg-blue-50/40' : ''}`}
+                  className={`cursor-pointer transition hover:bg-gray-50 ${o.status === 'new' ? 'bg-red-50/50' : ''}`}
                 >
                   <td className="px-4 py-3 font-semibold text-gray-950">#{o.id}</td>
                   <td className="px-4 py-3 whitespace-nowrap text-gray-500">{formatDateTime(o.created_at)}</td>

@@ -19,7 +19,7 @@ import { useAdminData } from '../lib/data'
 import Avatar from './Avatar'
 import GlobalSearch from './GlobalSearch'
 import SecurityModal from './SecurityModal'
-import { iconBtn } from './styles'
+import { alertBadge, glassActive, glassBadge, iconBtn } from './styles'
 
 // do'kon manzili (Vercel env: VITE_STORE_URL), menyudagi "Открыть магазин" uchun
 const STORE_URL = (import.meta.env.VITE_STORE_URL as string | undefined) || ''
@@ -49,7 +49,7 @@ function Sidebar({
     <div className="flex h-full flex-col">
       <div className="flex h-16 items-center gap-2 px-5">
         <Logo />
-        <span className="rounded-md bg-blue-700 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-white uppercase shadow-sm">
+        <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold tracking-wide uppercase ${glassBadge}`}>
           Admin
         </span>
       </div>
@@ -65,22 +65,23 @@ function Sidebar({
                 className={({ isActive }) =>
                   `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition ${
                     isActive
-                      ? 'bg-gray-950 text-white'
+                      ? glassActive
                       : 'text-gray-600 hover:bg-gray-100 hover:text-gray-950'
                   }`
                 }
               >
                 {({ isActive }) => (
                   <>
-                    <Icon className="size-4" />
+                    <Icon className={`size-4 ${isActive ? 'text-blue-700' : ''}`} />
                     {label}
                     {badge !== null && (
                       <span
                         className={`ml-auto rounded-full px-2 py-0.5 text-[11px] leading-none font-semibold ${
-                          isActive
-                            ? 'bg-white/20 text-white'
-                            : highlight
-                              ? 'bg-blue-600 text-white'
+                          // yangi buyurtma/xabar soni doim qizil — bo'lim ochiq bo'lsa ham
+                          highlight
+                            ? alertBadge
+                            : isActive
+                              ? 'bg-white/70 text-blue-800'
                               : 'bg-gray-100 text-gray-500'
                         }`}
                       >

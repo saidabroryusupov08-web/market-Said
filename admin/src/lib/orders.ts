@@ -3,7 +3,7 @@
 export type OrderStatus = 'new' | 'processing' | 'shipped' | 'delivered' | 'cancelled'
 
 export const ORDER_STATUSES: { value: OrderStatus; label: string; className: string }[] = [
-  { value: 'new', label: 'Новый', className: 'bg-blue-50 text-blue-700 ring-blue-200' },
+  { value: 'new', label: 'Новый', className: 'bg-red-50 text-red-700 ring-red-200' },
   { value: 'processing', label: 'В работе', className: 'bg-amber-50 text-amber-700 ring-amber-200' },
   { value: 'shipped', label: 'Отправлен', className: 'bg-violet-50 text-violet-700 ring-violet-200' },
   { value: 'delivered', label: 'Доставлен', className: 'bg-green-50 text-green-700 ring-green-200' },

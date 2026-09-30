@@ -47,7 +47,7 @@ function StatCard({
         <p className="text-sm text-gray-500">{label}</p>
         <span
           className={`flex size-8 items-center justify-center rounded-lg ${
-            accent ? 'bg-blue-50 text-blue-600' : 'bg-gray-100 text-gray-600'
+            accent ? 'bg-red-50 text-red-600' : 'bg-gray-100 text-gray-600'
           }`}
         >
           <Icon className="size-4" />
@@ -267,7 +267,7 @@ function Dashboard() {
                     className="flex items-center gap-3 px-5 py-3 transition hover:bg-gray-50"
                   >
                     <span
-                      className={`size-2 shrink-0 rounded-full ${m.is_read ? 'bg-transparent' : 'bg-blue-500'}`}
+                      className={`size-2 shrink-0 rounded-full ${m.is_read ? 'bg-transparent' : 'bg-red-500'}`}
                     />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm font-medium text-gray-950">

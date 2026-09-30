@@ -4,7 +4,7 @@ import { LogoMark } from '../../../shared/Logo'
 import { useAuth } from '../lib/auth'
 import { validatePassword } from '../lib/password'
 import PasswordInput from '../components/PasswordInput'
-import { inputClass, labelClass, primaryBtn, secondaryBtn } from '../components/styles'
+import { glassBadge, inputClass, labelClass, primaryBtn, secondaryBtn } from '../components/styles'
 
 
 // Kirishga oid barcha ekranlar: login, parolni tiklash, 2FA kodi, yangi parol.
@@ -20,7 +20,7 @@ function Shell({ children }: { children: ReactNode }) {
               cX
             </span>
             <span className="font-semibold text-slate-500">-shop</span>
-            <span className="ml-2 rounded-md bg-blue-700 px-1.5 py-0.5 align-middle shadow-sm text-[10px] font-bold tracking-wide text-white uppercase">
+            <span className={`ml-2 rounded-md px-1.5 py-0.5 align-middle text-[10px] font-bold tracking-wide uppercase ${glassBadge}`}>
               Admin
             </span>
           </p>

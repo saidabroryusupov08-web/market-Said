@@ -6,10 +6,29 @@ Kiyim do'koni (React + Vite + Tailwind) va unga alohida admin panel. Ma'lumotlar
 market-Said/
 ├── src/            do'kon sayti (mijozlar uchun)          → npm run dev        / build
 ├── admin/          admin panel (faqat admin uchun)        → npm run dev:admin  / build:admin
-├── shared/         ikkalasiga umumiy: mahsulot turi, narx, rasmlar, Supabase, logotip
-├── api/            Vercel server funksiyasi: obuna → Supabase + Telegram
+├── shared/         ikkalasiga umumiy: mahsulot turi, narx, qidiruv, rasmlar, Supabase, logotip
+├── api/            Vercel server funksiyalari: obuna (subscribe) va buyurtma (order)
 └── supabase/       bazaning jadvallari va himoya qoidalari (schema.sql)
 ```
+
+## Imkoniyatlar
+
+**Do'kon:** mahsulotlar bazadan, o'lchamga qarab narx, chegirma (−N%), savat va sevimlilar,
+**buyurtma berish** (ism, telefon, manzil → admin panelga va Telegram'ga), obuna.
+**Qidiruv 3 tilda:** "hoodie", "qora futbolka", "hudi", "backpack" ham ruscha nomlarni topadi
+(`shared/search.ts` — transliteratsiya + inglizcha/o'zbekcha lug'at).
+
+**Admin panel:**
+- **Главная** — yangi buyurtmalar, 30 kunlik tushum va o'rtacha chek, so'nggi buyurtma va xabarlar
+- **Заказы** — holatlar (Новый → В работе → Отправлен → Доставлен / Отменён), qidiruv (№, ism,
+  telefon, manzil), tafsilot, admin izohi, CSV (Excel)
+- **Товары** — jadval, qidiruv (3 tilda), kategoriya va ko'rinish filtri, qo'shish/tahrirlash,
+  o'lcham narxlari, **chegirma (eski narx)**, **saytdan yashirish** (bir bosishda), rasm yuklash
+- **Сообщения** — obunachilar, o'qildi belgisi, CSV
+- Tepada umumiy qidiruv (Ctrl+K): buyurtma, mahsulot va email; «Безопасность»: parol va 2FA
+
+Buyurtma narxini server bazadagi mahsulotdan **o'zi** hisoblaydi — brauzerda narxni o'zgartirib,
+arzonga buyurtma berib bo'lmaydi; yashirilgan mahsulot yoki yo'q o'lchamga buyurtma rad etiladi.
 
 ## Himoya qanday ishlaydi
 
@@ -29,7 +48,8 @@ market-Said/
 
 ### 1. Supabase
 1. [supabase.com](https://supabase.com) → **New project**.
-2. **SQL Editor → New query** → `supabase/schema.sql` ichidagini joylab **Run**.
+2. **SQL Editor → New query** → `supabase/schema.sql` ichidagini joylab **Run**. (Kod yangilanganda
+   qayta ishga tushirish xavfsiz — yangi ustun va jadvallar qo'shiladi, ma'lumot o'chmaydi.)
 3. **Authentication → Users → Add user**: admin emaili va paroli, "Auto Confirm User" ✔.
 4. **Authentication → Sign In / Providers**: "Allow new users to sign up" ni **o'chiring**.
 5. SQL Editor'da (emailni o'zingiznikiga almashtiring):

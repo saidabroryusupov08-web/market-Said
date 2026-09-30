@@ -67,6 +67,8 @@ type CartContextValue = {
   addItem: (product: Product, size: string, color: string) => void
   updateQuantity: (key: string, quantity: number) => void
   removeItem: (key: string) => void
+  // buyurtma berilgandan keyin
+  clearCart: () => void
 }
 
 const CartContext = createContext<CartContextValue | null>(null)
@@ -120,6 +122,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     )
   }
 
+  const clearCart = () => setItems([])
+
   const removeItem = (key: string) => {
     setItems((prev) => prev.filter((item) => item.key !== key))
   }
@@ -142,6 +146,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         addItem,
         updateQuantity,
         removeItem,
+        clearCart,
       }}
     >
       {children}

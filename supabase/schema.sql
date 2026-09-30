@@ -51,11 +51,15 @@ create table if not exists public.products (
   size_prices jsonb not null default '{}'::jsonb
 );
 create index if not exists products_created_at_idx on public.products (created_at desc);
+-- keyin qo'shilgan ustunlar (eski bazada ham qo'shiladi)
+alter table public.products add column if not exists old_price numeric(10, 2) check (old_price > 0);
+alter table public.products add column if not exists is_active boolean not null default true;
 alter table public.products enable row level security;
 
+-- yashirilgan (is_active = false) mahsulotni faqat admin ko'radi
 drop policy if exists "mahsulotlarni hamma ko'radi" on public.products;
 create policy "mahsulotlarni hamma ko'radi" on public.products
-  for select using (true);
+  for select using (is_active or public.is_admin());
 
 drop policy if exists "faqat admin qo'shadi" on public.products;
 create policy "faqat admin qo'shadi" on public.products
@@ -98,6 +102,40 @@ drop policy if exists "xabarni faqat admin o'chiradi" on public.messages;
 create policy "xabarni faqat admin o'chiradi" on public.messages
   for delete to authenticated using (public.is_admin());
 -- insert qoidasi yo'q: brauzerdan to'g'ridan yozib bo'lmaydi, faqat server (service_role)
+
+-- ========== Buyurtmalar ==========
+-- Do'kondagi "Оформить заказ" -> api/order.ts (server narxni bazadan o'zi hisoblaydi) -> shu jadval
+create table if not exists public.orders (
+  id bigint generated always as identity primary key,
+  created_at timestamptz not null default now(),
+  status text not null default 'new'
+    check (status in ('new', 'processing', 'shipped', 'delivered', 'cancelled')),
+  customer_name text not null check (char_length(customer_name) between 2 and 100),
+  phone text not null,
+  email text,
+  address text not null,
+  comment text,
+  items jsonb not null default '[]'::jsonb,
+  total numeric(10, 2) not null default 0,
+  admin_note text,
+  device text,
+  browser text
+);
+create index if not exists orders_created_at_idx on public.orders (created_at desc);
+alter table public.orders enable row level security;
+
+drop policy if exists "buyurtmani faqat admin ko'radi" on public.orders;
+create policy "buyurtmani faqat admin ko'radi" on public.orders
+  for select to authenticated using (public.is_admin());
+
+drop policy if exists "buyurtmani faqat admin o'zgartiradi" on public.orders;
+create policy "buyurtmani faqat admin o'zgartiradi" on public.orders
+  for update to authenticated using (public.is_admin()) with check (public.is_admin());
+
+drop policy if exists "buyurtmani faqat admin o'chiradi" on public.orders;
+create policy "buyurtmani faqat admin o'chiradi" on public.orders
+  for delete to authenticated using (public.is_admin());
+-- insert qoidasi yo'q: faqat server (service_role) yozadi
 
 -- ========== Mahsulot rasmlari (Storage) ==========
 -- ochiq (hamma ko'radi), bitta fayl 2 MB gacha, faqat rasm turlari

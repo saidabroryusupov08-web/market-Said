@@ -1,7 +1,8 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Minus, Plus, ShoppingBag, Trash2, X } from 'lucide-react'
 import { useCart } from '../../context/CartContext'
 import ProductImage from '../sections/Products/ProductImage'
+import CheckoutModal from './CheckoutModal'
 
 function CartDrawer() {
   const {
@@ -13,6 +14,7 @@ function CartDrawer() {
     updateQuantity,
     removeItem,
   } = useCart()
+  const [checkoutOpen, setCheckoutOpen] = useState(false)
 
   useEffect(() => {
     if (!open) return
@@ -26,6 +28,7 @@ function CartDrawer() {
   }, [open, onClose])
 
   return (
+    <>
     <div
       className={`fixed inset-0 z-50 ${open ? '' : 'pointer-events-none'}`}
       aria-hidden={!open}
@@ -133,7 +136,12 @@ function CartDrawer() {
               </div>
               <button
                 type="button"
-                className="w-full rounded-md bg-gray-950 py-2.5 font-semibold text-white transition hover:bg-gray-800"
+                onClick={() => {
+                  // savat yopiladi (u "inert" bo'lib qoladi), forma alohida oynada ochiladi
+                  onClose()
+                  setCheckoutOpen(true)
+                }}
+                className="w-full cursor-pointer rounded-md bg-gray-950 py-2.5 font-semibold text-white transition hover:bg-gray-800"
               >
                 Оформить заказ
               </button>
@@ -142,6 +150,8 @@ function CartDrawer() {
         )}
       </aside>
     </div>
+    {checkoutOpen && <CheckoutModal onClose={() => setCheckoutOpen(false)} />}
+    </>
   )
 }
 

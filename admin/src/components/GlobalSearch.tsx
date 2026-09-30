@@ -1,20 +1,28 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ImageIcon, Mail, Package, Search, X } from 'lucide-react'
+import { ImageIcon, Mail, Package, Search, ShoppingBag, X } from 'lucide-react'
 import { resolveImage } from '../../../shared/images'
 import { minPrice } from '../../../shared/price'
+import { createMatcher } from '../../../shared/search'
 import { useAdminData } from '../lib/data'
 
 type Result =
   | { kind: 'product'; id: number; title: string; subtitle: string; image?: string; to: string }
+  | { kind: 'order'; id: number; title: string; subtitle: string; to: string }
   | { kind: 'message'; id: number; title: string; subtitle: string; to: string }
 
 const LIMIT = 5
 
-// Admin panelning o'z qidiruvi: mahsulotlar (nom, kategoriya, rang) va xabarlar (email)
-// bo'yicha birdaniga qidiradi. Ctrl+K (yoki /) bilan tezda ochiladi.
+const GROUPS = [
+  { kind: 'order', label: 'Заказы' },
+  { kind: 'product', label: 'Товары' },
+  { kind: 'message', label: 'Сообщения' },
+] as const
+
+// Admin panelning o'z qidiruvi: buyurtmalar (№, ism, telefon), mahsulotlar (nom, kategoriya,
+// rang — inglizcha/o'zbekcha ham) va xabarlar (email) bo'yicha. Ctrl+K (yoki /) bilan ochiladi.
 function GlobalSearch() {
-  const { products, messages } = useAdminData()
+  const { products, messages, orders } = useAdminData()
   const navigate = useNavigate()
   const inputRef = useRef<HTMLInputElement>(null)
   const boxRef = useRef<HTMLDivElement>(null)
@@ -26,8 +34,10 @@ function GlobalSearch() {
 
   const results = useMemo<Result[]>(() => {
     if (!q) return []
+    // inglizcha/o'zbekcha/lotincha so'rov ham ruscha nomlarni topadi (shared/search.ts)
+    const matches = createMatcher(q)
     const productHits: Result[] = products
-      .filter((p) => [p.name, p.category, ...p.colors].join(' ').toLowerCase().includes(q))
+      .filter((p) => matches([p.name, p.category, p.description, ...p.colors].join(' ')))
       .slice(0, LIMIT)
       .map((p) => ({
         kind: 'product',
@@ -47,8 +57,25 @@ function GlobalSearch() {
         subtitle: new Date(m.created_at).toLocaleDateString('ru-RU'),
         to: `/messages?q=${encodeURIComponent(m.email)}`,
       }))
-    return [...productHits, ...messageHits]
-  }, [q, products, messages])
+    const idQuery = q.replace(/^#/, '')
+    const digits = q.replace(/\D/g, '')
+    const orderHits: Result[] = orders
+      .filter(
+        (o) =>
+          String(o.id) === idQuery ||
+          (digits.length >= 3 && o.phone.replace(/\D/g, '').includes(digits)) ||
+          matches([o.customer_name, o.email ?? '', o.address].join(' ')),
+      )
+      .slice(0, LIMIT)
+      .map((o) => ({
+        kind: 'order',
+        id: o.id,
+        title: `#${o.id} · ${o.customer_name}`,
+        subtitle: `${o.phone} · $${Number(o.total).toFixed(2)}`,
+        to: `/orders?id=${o.id}`,
+      }))
+    return [...orderHits, ...productHits, ...messageHits]
+  }, [q, products, messages, orders])
 
   // Ctrl+K yoki "/" — qidiruvga o'tish (yozish maydonida turganda "/" ishlamaydi)
   useEffect(() => {
@@ -111,7 +138,7 @@ function GlobalSearch() {
         }}
         onFocus={() => setOpen(true)}
         onKeyDown={onKeyDown}
-        placeholder="Поиск товаров и email..."
+        placeholder="Поиск: заказы, товары, email..."
         aria-label="Поиск по админ-панели"
         autoComplete="off"
         className="h-10 w-full rounded-lg border border-gray-200 bg-gray-50 pr-16 pl-9 text-sm outline-none transition focus:border-blue-500 focus:bg-white focus:shadow-[0_0_0_4px_rgba(59,130,246,0.2)]"
@@ -141,13 +168,13 @@ function GlobalSearch() {
               Ничего не найдено по «{query.trim()}»
             </p>
           ) : (
-            (['product', 'message'] as const).map((kind) => {
+            GROUPS.map(({ kind, label }) => {
               const group = results.filter((r) => r.kind === kind)
               if (group.length === 0) return null
               return (
                 <div key={kind} className="py-1">
                   <p className="px-2.5 pb-1 text-[11px] font-semibold tracking-wide text-gray-400 uppercase">
-                    {kind === 'product' ? 'Товары' : 'Сообщения'}
+                    {label}
                   </p>
                   {group.map((r) => {
                     const index = results.indexOf(r)
@@ -168,6 +195,8 @@ function GlobalSearch() {
                             ) : (
                               <ImageIcon className="size-4" />
                             )
+                          ) : r.kind === 'order' ? (
+                            <ShoppingBag className="size-4" />
                           ) : (
                             <Mail className="size-4" />
                           )}

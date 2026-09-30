@@ -6,6 +6,7 @@ import { ToastProvider } from './components/ui'
 import Dashboard from './pages/Dashboard'
 import Login, { MfaChallenge, NotAdmin, NotConfigured, ResetPassword } from './pages/Login'
 import Messages from './pages/Messages'
+import Orders from './pages/Orders'
 import Products from './pages/Products'
 
 // Admin bo'lmagan hech kim panelning ichki sahifalarini ko'rmaydi.
@@ -30,6 +31,7 @@ function Gate() {
       <Layout>
         <Routes>
           <Route path="/" element={<Dashboard />} />
+          <Route path="/orders" element={<Orders />} />
           <Route path="/products" element={<Products />} />
           <Route path="/messages" element={<Messages />} />
           <Route path="*" element={<Navigate to="/" replace />} />

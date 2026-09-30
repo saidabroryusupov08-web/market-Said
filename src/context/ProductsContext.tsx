@@ -30,7 +30,8 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
           console.error('Mahsulotlarni yuklab bo‘lmadi:', error.message)
           setProducts(defaultProducts)
         } else {
-          setProducts((data as ProductRow[]).map(fromRow))
+          // yashirilgan mahsulotlarni baza (RLS) o'zi bermaydi; bu — qo'shimcha ehtiyot
+          setProducts((data as ProductRow[]).map(fromRow).filter((p) => p.isActive !== false))
         }
         setLoaded(true)
       })

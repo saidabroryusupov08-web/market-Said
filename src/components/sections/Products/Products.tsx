@@ -5,6 +5,7 @@ import { useSearch } from '../../../context/SearchContext'
 import { categories, NAV_TAGS, type Product } from '../../../data/products'
 import { useProducts } from '../../../context/ProductsContext'
 import { minPrice } from '../../../utils/price'
+import { createMatcher } from '../../../../shared/search'
 import Select from '../../ui/Select'
 import ProductCard from './ProductCard'
 import QuickViewModal from './QuickViewModal'
@@ -32,14 +33,12 @@ function Products() {
   const search = query.trim().toLowerCase()
 
   const visibleProducts = useMemo(() => {
+    // inglizcha/o'zbekcha/lotincha yozilsa ham ruscha nomlar topiladi (shared/search.ts)
+    const matches = createMatcher(search)
     const filtered = products.filter((product) => {
       if (category !== 'Все' && product.category !== category) return false
       if (activeTag && !product.tags?.includes(activeTag)) return false
-      if (!search) return true
-      return [product.name, product.category, product.description, ...product.colors]
-        .join(' ')
-        .toLowerCase()
-        .includes(search)
+      return matches([product.name, product.category, product.description, ...product.colors].join(' '))
     })
 
     return filtered.sort((a, b) => {

@@ -8,6 +8,7 @@ import {
   Menu,
   Package,
   RefreshCw,
+  ShoppingBag,
   ShieldCheck,
   X,
 } from 'lucide-react'
@@ -29,12 +30,13 @@ function Sidebar({
   onOpenSecurity: () => void
 }) {
   const { state, signOut } = useAuth()
-  const { products, unread } = useAdminData()
+  const { products, unread, newOrders } = useAdminData()
   const email = state.status === 'admin' ? (state.session.user.email ?? '') : ''
   const mfaEnabled = state.status === 'admin' && state.mfaEnabled
 
   const links = [
     { to: '/', label: 'Главная', Icon: LayoutDashboard, badge: null },
+    { to: '/orders', label: 'Заказы', Icon: ShoppingBag, badge: newOrders || null, highlight: true },
     { to: '/products', label: 'Товары', Icon: Package, badge: products.length || null },
     { to: '/messages', label: 'Сообщения', Icon: Inbox, badge: unread || null, highlight: true },
   ]
@@ -141,6 +143,7 @@ function Sidebar({
 
 const titles: Record<string, string> = {
   '/': 'Главная',
+  '/orders': 'Заказы',
   '/products': 'Товары',
   '/messages': 'Сообщения',
 }

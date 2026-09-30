@@ -25,7 +25,18 @@ export type Product = {
   tags?: NavTag[]
   // o'lcham bo'yicha alohida narx (admin kiritadi); berilmagan o'lcham uchun avtomatik hisoblanadi
   sizePrices?: Record<string, number>
+  // chegirmadan oldingi narx: bo'lsa, saytda ustidan chizilgan narx va "−20%" ko'rinadi
+  oldPrice?: number
+  // false — mahsulot saytda ko'rinmaydi (admin vaqtincha yashirgan)
+  isActive?: boolean
   createdAt?: string
+}
+
+// chegirma foizi (eski narx bo'lmasa yoki noto'g'ri bo'lsa 0)
+export function discountPercent(product: Pick<Product, 'price' | 'oldPrice'>): number {
+  const { price, oldPrice } = product
+  if (!oldPrice || !(oldPrice > price)) return 0
+  return Math.round((1 - price / oldPrice) * 100)
 }
 
 export const categories = [

@@ -25,6 +25,8 @@ export type ProductRow = {
   image: string | null
   tags: string[]
   size_prices: Record<string, number> | null
+  old_price: number | string | null
+  is_active: boolean | null
 }
 
 export function fromRow(row: ProductRow): Product {
@@ -42,6 +44,8 @@ export function fromRow(row: ProductRow): Product {
     image: row.image ?? undefined,
     tags: (row.tags ?? []) as NavTag[],
     sizePrices: Object.keys(sizePrices).length > 0 ? sizePrices : undefined,
+    oldPrice: row.old_price != null ? Number(row.old_price) : undefined,
+    isActive: row.is_active !== false,
   }
 }
 
@@ -56,5 +60,7 @@ export function toRow(p: Omit<Product, 'id' | 'createdAt'>) {
     image: p.image ?? null,
     tags: p.tags ?? [],
     size_prices: p.sizePrices ?? {},
+    old_price: p.oldPrice ?? null,
+    is_active: p.isActive !== false,
   }
 }

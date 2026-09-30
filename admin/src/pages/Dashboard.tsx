@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowRight, Download, Inbox, Mail, Package, ShoppingBag, Users } from 'lucide-react'
+import { ArrowRight, Download, Inbox, Package, ShoppingBag, Wallet } from 'lucide-react'
 import { formatDateTime } from '../lib/format'
 import { useAdminData } from '../lib/data'
+import { StatusBadge } from './Orders'
 import { primaryBtn, useToast } from '../components/ui'
 
 const DAY = 24 * 60 * 60 * 1000
@@ -44,7 +45,8 @@ function StatCard({
 }
 
 function Dashboard() {
-  const { products, messages, productsLoaded, unread, importDefaults } = useAdminData()
+  const { products, messages, orders, productsLoaded, unread, newOrders, importDefaults } =
+    useAdminData()
   const showToast = useToast()
   const [importing, setImporting] = useState(false)
 
@@ -52,7 +54,14 @@ function Dashboard() {
   const [now] = useState(() => Date.now())
   const lastWeek = messages.filter((m) => now - new Date(m.created_at).getTime() < 7 * DAY)
   const uniqueEmails = new Set(messages.map((m) => m.email.toLowerCase())).size
-  const withCart = messages.filter((m) => m.cart.length > 0).length
+  const hiddenProducts = products.filter((p) => p.isActive === false).length
+
+  // tushum: oxirgi 30 kun, bekor qilinganlarsiz
+  const monthOrders = orders.filter(
+    (o) => o.status !== 'cancelled' && now - new Date(o.created_at).getTime() < 30 * DAY,
+  )
+  const revenue = monthOrders.reduce((sum, o) => sum + Number(o.total), 0)
+  const averageCheck = monthOrders.length > 0 ? revenue / monthOrders.length : 0
 
   // kategoriya bo'yicha nechta mahsulot borligi (eng ko'pi tepada)
   const byCategory = Object.entries(
@@ -89,29 +98,77 @@ function Dashboard() {
       )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Товаров" value={products.length} Icon={Package} to="/products" />
+        <StatCard
+          label="Новых заказов"
+          value={newOrders}
+          hint={newOrders > 0 ? 'Ждут подтверждения' : 'Все заказы обработаны'}
+          Icon={ShoppingBag}
+          to="/orders?status=new"
+          accent={newOrders > 0}
+        />
+        <StatCard
+          label="Выручка за 30 дней"
+          value={`$${revenue.toFixed(2)}`}
+          hint={`${monthOrders.length} заказов · средний чек $${averageCheck.toFixed(2)}`}
+          Icon={Wallet}
+          to="/orders"
+        />
+        <StatCard
+          label="Товаров"
+          value={products.length}
+          hint={hiddenProducts > 0 ? `${hiddenProducts} скрыто с сайта` : 'Все на сайте'}
+          Icon={Package}
+          to="/products"
+        />
         <StatCard
           label="Новых сообщений"
           value={unread}
-          hint={unread > 0 ? 'Нажмите, чтобы прочитать' : 'Всё прочитано'}
+          hint={`${uniqueEmails} подписчиков · ${lastWeek.length} за неделю`}
           Icon={Inbox}
           to="/messages"
           accent={unread > 0}
         />
-        <StatCard
-          label="Подписок за 7 дней"
-          value={lastWeek.length}
-          Icon={Mail}
-          to="/messages"
-        />
-        <StatCard
-          label="Подписчиков"
-          value={uniqueEmails}
-          hint={`${withCart} с товарами в корзине`}
-          Icon={Users}
-          to="/messages"
-        />
       </div>
+
+      <section className="rounded-xl border border-gray-200 bg-white">
+        <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+          <h2 className="font-semibold text-gray-950">Последние заказы</h2>
+          <Link
+            to="/orders"
+            className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-950"
+          >
+            Все <ArrowRight className="size-3.5" />
+          </Link>
+        </div>
+        {orders.length === 0 ? (
+          <p className="px-5 py-10 text-center text-sm text-gray-400">
+            Заказов пока нет — они появятся, когда покупатель оформит корзину на сайте
+          </p>
+        ) : (
+          <ul className="divide-y divide-gray-100">
+            {orders.slice(0, 5).map((o) => (
+              <li key={o.id}>
+                <Link
+                  to={`/orders?id=${o.id}`}
+                  className="flex items-center gap-3 px-5 py-3 transition hover:bg-gray-50"
+                >
+                  <span className="w-12 shrink-0 text-sm font-semibold text-gray-950">#{o.id}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-medium text-gray-950">
+                      {o.customer_name}
+                    </span>
+                    <span className="block text-xs text-gray-400">{formatDateTime(o.created_at)}</span>
+                  </span>
+                  <span className="shrink-0 text-sm font-semibold text-gray-950">
+                    ${Number(o.total).toFixed(2)}
+                  </span>
+                  <StatusBadge status={o.status} />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
         <section className="rounded-xl border border-gray-200 bg-white lg:col-span-3">

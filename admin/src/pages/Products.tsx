@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { ImageIcon, Pencil, Plus, Search, Trash2 } from 'lucide-react'
+import { Eye, EyeOff, ImageIcon, Pencil, Plus, Search, Trash2 } from 'lucide-react'
 import { resolveImage } from '../../../shared/images'
 import { hasSizePriceRange, minPrice } from '../../../shared/price'
-import { categories, NAV_TAGS, type Product } from '../../../shared/products'
-import { useAdminData } from '../lib/data'
+import { categories, discountPercent, NAV_TAGS, type Product } from '../../../shared/products'
+import { createMatcher } from '../../../shared/search'
+import { useAdminData, type ProductInput } from '../lib/data'
 import ProductForm from '../components/ProductForm'
 import { ConfirmDialog, iconBtn, inputClass, Modal, primaryBtn, useToast } from '../components/ui'
 
@@ -27,7 +28,7 @@ const priceLabel = (p: Product) =>
   `${hasSizePriceRange(p) ? 'от ' : ''}$${minPrice(p).toFixed(2)}`
 
 function Products() {
-  const { products, productsLoaded, deleteProduct } = useAdminData()
+  const { products, productsLoaded, deleteProduct, updateProduct } = useAdminData()
   const showToast = useToast()
   // qidiruv, filtr va ochiq forma manzilda turadi: global qidiruvdan kelganda ham ishlaydi
   const [params, setParams] = useSearchParams()
@@ -36,6 +37,7 @@ function Products() {
   const [toDelete, setToDelete] = useState<Product | null>(null)
 
   const category = params.get('category') ?? 'Все'
+  const visibility = params.get('visibility') ?? 'all'
   const editId = Number(params.get('edit'))
   const editing = products.find((p) => p.id === editId)
 
@@ -47,13 +49,25 @@ function Products() {
   }
 
   const visible = useMemo(() => {
-    const q = search.trim().toLowerCase()
+    // "hoodie", "qora", "futbolka" ham ruscha nomlarni topadi (shared/search.ts)
+    const matches = createMatcher(search)
     return products.filter(
       (p) =>
         (category === 'Все' || p.category === category) &&
-        (!q || [p.name, p.category, p.description, ...p.colors].join(' ').toLowerCase().includes(q)),
+        (visibility === 'all' || (visibility === 'hidden') === (p.isActive === false)) &&
+        matches([p.name, p.category, p.description, ...p.colors].join(' ')),
     )
-  }, [products, search, category])
+  }, [products, search, category, visibility])
+
+  // saytdan tezda yashirish / qaytarish (mahsulot bazada qoladi)
+  const toggleVisibility = async (p: Product) => {
+    const input: ProductInput = { ...p, isActive: p.isActive === false }
+    const error = await updateProduct(p.id, input)
+    showToast(
+      error ?? (input.isActive ? `«${p.name}» снова на сайте` : `«${p.name}» скрыт с сайта`),
+      error ? 'error' : 'success',
+    )
+  }
 
   const confirmDelete = async () => {
     if (!toDelete) return
@@ -87,6 +101,16 @@ function Products() {
             </option>
           ))}
         </select>
+        <select
+          aria-label="Видимость"
+          className={`${inputClass} cursor-pointer sm:w-40`}
+          value={visibility}
+          onChange={(e) => updateParam('visibility', e.target.value === 'all' ? null : e.target.value)}
+        >
+          <option value="all">Все товары</option>
+          <option value="active">На сайте</option>
+          <option value="hidden">Скрытые</option>
+        </select>
         <button type="button" onClick={() => setAdding(true)} className={primaryBtn}>
           <Plus className="size-4" />
           Добавить товар
@@ -118,13 +142,18 @@ function Products() {
               {visible.map((p) => (
                 <tr key={p.id} className="transition hover:bg-gray-50/70">
                   <td className="px-4 py-3">
-                    <div className="flex items-center gap-3">
+                    <div className={`flex items-center gap-3 ${p.isActive === false ? 'opacity-50' : ''}`}>
                       <Thumb product={p} />
                       <div className="min-w-0">
                         <p className="max-w-xs truncate font-medium text-gray-950">{p.name}</p>
-                        {p.tags && p.tags.length > 0 && (
+                        {(p.isActive === false || (p.tags && p.tags.length > 0)) && (
                           <div className="mt-1 flex flex-wrap gap-1">
-                            {p.tags.map((t) => (
+                            {p.isActive === false && (
+                              <span className="rounded bg-gray-900 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                                Скрыт
+                              </span>
+                            )}
+                            {p.tags?.map((t) => (
                               <span
                                 key={t}
                                 className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-600"
@@ -138,8 +167,14 @@ function Products() {
                     </div>
                   </td>
                   <td className="px-4 py-3 text-gray-600">{p.category}</td>
-                  <td className="px-4 py-3 font-medium whitespace-nowrap text-gray-950">
-                    {priceLabel(p)}
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <p className="font-medium text-gray-950">{priceLabel(p)}</p>
+                    {discountPercent(p) > 0 && (
+                      <p className="text-xs">
+                        <span className="text-gray-400 line-through">${p.oldPrice!.toFixed(2)}</span>
+                        <span className="ml-1.5 font-semibold text-red-600">−{discountPercent(p)}%</span>
+                      </p>
+                    )}
                   </td>
                   <td className="max-w-[220px] px-4 py-3 text-xs text-gray-500">
                     <p className="truncate">{p.sizes.join(', ')}</p>
@@ -147,6 +182,15 @@ function Products() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-1">
+                      <button
+                        type="button"
+                        aria-label={p.isActive === false ? `Показать ${p.name} на сайте` : `Скрыть ${p.name} с сайта`}
+                        title={p.isActive === false ? 'Показать на сайте' : 'Скрыть с сайта'}
+                        onClick={() => toggleVisibility(p)}
+                        className={iconBtn}
+                      >
+                        {p.isActive === false ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                      </button>
                       <button
                         type="button"
                         aria-label={`Редактировать ${p.name}`}
@@ -185,6 +229,8 @@ function Products() {
                   <p className="truncate text-sm font-medium text-gray-950">{p.name}</p>
                   <p className="text-xs text-gray-500">
                     {p.category} · {priceLabel(p)}
+                    {discountPercent(p) > 0 && <span className="ml-1 text-red-600">−{discountPercent(p)}%</span>}
+                    {p.isActive === false && <span className="ml-1 font-semibold text-gray-900">· скрыт</span>}
                   </p>
                 </button>
                 <button

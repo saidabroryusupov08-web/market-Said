@@ -52,6 +52,8 @@ type FormState = {
   image: string
   tags: NavTag[]
   sizePrices: Record<string, string>
+  oldPrice: string
+  isActive: boolean
 }
 
 function toForm(product?: Product): FormState {
@@ -67,6 +69,8 @@ function toForm(product?: Product): FormState {
     sizePrices: Object.fromEntries(
       Object.entries(product?.sizePrices ?? {}).map(([size, price]) => [size, String(price)]),
     ),
+    oldPrice: product?.oldPrice ? String(product.oldPrice) : '',
+    isActive: product?.isActive !== false,
   }
 }
 
@@ -131,6 +135,9 @@ function ProductForm({ product, onDone }: { product?: Product; onDone: () => voi
     if (!(basePrice > 0)) next.price = 'Цена должна быть больше 0'
     if (sizes.length === 0) next.sizes = 'Укажите хотя бы один размер'
     if (colors.length === 0) next.colors = 'Укажите хотя бы один цвет'
+    const oldPrice = form.oldPrice.trim() ? Number(form.oldPrice) : undefined
+    if (oldPrice !== undefined && !(oldPrice > basePrice))
+      next.oldPrice = 'Старая цена должна быть больше текущей'
     if (Object.keys(next).length > 0) return setErrors(next)
 
     const sizePrices = Object.fromEntries(
@@ -148,6 +155,8 @@ function ProductForm({ product, onDone }: { product?: Product; onDone: () => voi
       image: form.image.trim() || undefined,
       tags: form.tags,
       sizePrices: Object.keys(sizePrices).length > 0 ? sizePrices : undefined,
+      oldPrice: oldPrice !== undefined ? Math.round(oldPrice * 100) / 100 : undefined,
+      isActive: form.isActive,
     }
 
     setSaving(true)
@@ -262,6 +271,47 @@ function ProductForm({ product, onDone }: { product?: Product; onDone: () => voi
               onChange={(e) => set('price', e.target.value)}
             />
             {fieldError('price')}
+          </div>
+          <div>
+            <label className={labelClass} htmlFor="p-old-price">
+              Старая цена (для скидки)
+            </label>
+            <input
+              id="p-old-price"
+              type="number"
+              step="0.01"
+              min="0"
+              className={`${inputClass} ${errorBorder('oldPrice')}`}
+              placeholder="пусто — без скидки"
+              value={form.oldPrice}
+              onChange={(e) => set('oldPrice', e.target.value)}
+            />
+            {fieldError('oldPrice')}
+            {!errors.oldPrice && Number(form.oldPrice) > basePrice && basePrice > 0 && (
+              <p className="mt-1 text-xs text-red-600">
+                На сайте: −{Math.round((1 - basePrice / Number(form.oldPrice)) * 100)}%
+              </p>
+            )}
+          </div>
+          <div>
+            <span className={labelClass}>Видимость</span>
+            {/* o'chirilsa mahsulot saytdan yashiriladi, lekin bazada qoladi */}
+            <button
+              type="button"
+              role="switch"
+              aria-checked={form.isActive}
+              onClick={() => set('isActive', !form.isActive)}
+              className="flex h-10 w-full cursor-pointer items-center gap-3 rounded-lg border border-gray-300 bg-white px-3 text-left text-sm"
+            >
+              <span
+                className={`relative h-5 w-9 shrink-0 rounded-full transition ${form.isActive ? 'bg-green-500' : 'bg-gray-300'}`}
+              >
+                <span
+                  className={`absolute top-0.5 size-4 rounded-full bg-white shadow transition-all ${form.isActive ? 'left-[18px]' : 'left-0.5'}`}
+                />
+              </span>
+              {form.isActive ? 'Показывать на сайте' : 'Скрыт с сайта'}
+            </button>
           </div>
           <div>
             <label className={labelClass} htmlFor="p-sizes">

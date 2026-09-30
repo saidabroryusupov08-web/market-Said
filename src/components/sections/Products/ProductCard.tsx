@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Heart } from 'lucide-react'
 import { useWishlist } from '../../../context/WishlistContext'
-import type { Product } from '../../../data/products'
+import { discountPercent, type Product } from '../../../data/products'
 import ProductImage from './ProductImage'
 import ProductOptions from './ProductOptions'
 import ProductPrice from './ProductPrice'
@@ -39,6 +39,11 @@ function ProductCard({ product, onQuickView }: ProductCardProps) {
     >
       <div className="relative aspect-square overflow-hidden rounded-t-xl">
         <ProductImage product={product} />
+        {discountPercent(product) > 0 && (
+          <span className="absolute top-3 left-3 rounded-md bg-red-600 px-2 py-1 text-xs font-bold text-white shadow">
+            −{discountPercent(product)}%
+          </span>
+        )}
         <button
           type="button"
           aria-label={liked ? 'Убрать из избранного' : 'Добавить в избранное'}

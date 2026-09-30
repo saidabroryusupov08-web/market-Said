@@ -14,6 +14,9 @@ import {
   toRow,
   type ProductRow,
 } from '../../../shared/supabase'
+import type { Order } from './orders'
+
+export type { Order, OrderStatus } from './orders'
 
 // Admin paneldagi barcha ma'lumotlar bitta joyda: bosh sahifa, jadvallar, qidiruv va
 // menyudagi "yangi xabarlar" soni bir xil ro'yxatni ko'radi.
@@ -40,10 +43,13 @@ type Result = Promise<string | null>
 type AdminDataValue = {
   products: Product[]
   messages: Message[]
+  orders: Order[]
   productsLoaded: boolean
   messagesLoaded: boolean
+  ordersLoaded: boolean
   loadError: string
   unread: number
+  newOrders: number
   reload: () => Promise<void>
   createProduct: (input: ProductInput) => Result
   updateProduct: (id: number, input: ProductInput) => Result
@@ -54,8 +60,11 @@ type AdminDataValue = {
   setRead: (id: number, isRead: boolean) => Result
   markAllRead: () => Result
   deleteMessage: (id: number) => Result
+  updateOrder: (id: number, changes: Partial<Pick<Order, 'status' | 'admin_note'>>) => Result
+  deleteOrder: (id: number) => Result
 }
 
+// yangi xabar va buyurtmalar shu oraliqda o'zi tekshiriladi
 const MESSAGES_REFRESH_MS = 30_000
 
 const AdminDataContext = createContext<AdminDataValue | null>(null)
@@ -76,6 +85,8 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
   const [messages, setMessages] = useState<Message[]>([])
   const [productsLoaded, setProductsLoaded] = useState(false)
   const [messagesLoaded, setMessagesLoaded] = useState(false)
+  const [orders, setOrders] = useState<Order[]>([])
+  const [ordersLoaded, setOrdersLoaded] = useState(false)
   const [loadError, setLoadError] = useState('')
 
   const loadProducts = useCallback(async () => {
@@ -100,19 +111,33 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
     setLoadError('')
   }, [db])
 
+  const loadOrders = useCallback(async () => {
+    const { data, error } = await db
+      .from('orders')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(500)
+    if (error) return setLoadError(describe(error) ?? '')
+    setOrders(data as Order[])
+    setOrdersLoaded(true)
+  }, [db])
+
   const reload = useCallback(async () => {
-    await Promise.all([loadProducts(), loadMessages()])
-  }, [loadProducts, loadMessages])
+    await Promise.all([loadProducts(), loadMessages(), loadOrders()])
+  }, [loadProducts, loadMessages, loadOrders])
 
   useEffect(() => {
     // effekt ichida to'g'ridan setState chaqirilmasligi uchun taymer orqali
     const first = setTimeout(reload, 0)
-    const timer = setInterval(loadMessages, MESSAGES_REFRESH_MS)
+    const timer = setInterval(() => {
+      loadMessages()
+      loadOrders()
+    }, MESSAGES_REFRESH_MS)
     return () => {
       clearTimeout(first)
       clearInterval(timer)
     }
-  }, [reload, loadMessages])
+  }, [reload, loadMessages, loadOrders])
 
   // ----- mahsulotlar -----
   const createProduct = async (input: ProductInput) => {
@@ -205,15 +230,36 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
       () => db.from('messages').delete().eq('id', id),
     )
 
+  // ----- buyurtmalar -----
+  const updateOrder = async (id: number, changes: Partial<Pick<Order, 'status' | 'admin_note'>>) => {
+    const previous = orders
+    setOrders((list) => list.map((o) => (o.id === id ? { ...o, ...changes } : o)))
+    const { error } = await db.from('orders').update(changes).eq('id', id)
+    if (error) setOrders(previous)
+    return describe(error)
+  }
+
+  const deleteOrder = async (id: number) => {
+    const { error } = await db.from('orders').delete().eq('id', id)
+    if (error) return describe(error)
+    setOrders((list) => list.filter((o) => o.id !== id))
+    return null
+  }
+
   return (
     <AdminDataContext.Provider
       value={{
         products,
         messages,
+        orders,
         productsLoaded,
         messagesLoaded,
+        ordersLoaded,
         loadError,
         unread: messages.filter((m) => !m.is_read).length,
+        newOrders: orders.filter((o) => o.status === 'new').length,
+        updateOrder,
+        deleteOrder,
         reload,
         createProduct,
         updateProduct,

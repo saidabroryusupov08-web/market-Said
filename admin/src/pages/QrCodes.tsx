@@ -14,8 +14,10 @@ const env = import.meta.env as Record<string, string | undefined>
 const trimSlash = (url: string) => url.replace(/\/$/, '')
 const isLocal = (url: string) => /^https?:\/\/(localhost|127\.|0\.0\.0\.0|\[::1\])/i.test(url)
 const PUBLIC_STORE_URL = trimSlash(env.VITE_PUBLIC_STORE_URL || 'https://market-said.vercel.app')
+// panel internetda ochilgan bo'lsa — o'sha manzil (o'z domeni ulansa ham to'g'ri chiqadi),
+// shu kompyuterda (localhost) ochilgan bo'lsa — Vercel'dagi admin manzili
 const PUBLIC_ADMIN_URL = trimSlash(
-  env.VITE_PUBLIC_ADMIN_URL || (isLocal(window.location.origin) ? '' : window.location.origin),
+  env.VITE_PUBLIC_ADMIN_URL || (isLocal(window.location.origin) ? 'https://cx-shop-admin.vercel.app' : window.location.origin),
 )
 const DARK = '#0f172a'
 

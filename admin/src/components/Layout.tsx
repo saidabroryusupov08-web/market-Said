@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 import { LanguageSwitcher } from '../../../shared/i18n'
 import Logo from '../../../shared/Logo'
+import Tooltip from '../../../shared/Tooltip'
 import { useT } from '../i18n'
 import { profileOf, useAuth } from '../lib/auth'
 import { useAdminData } from '../lib/data'
@@ -161,11 +162,11 @@ function Layout({ children }: { children: ReactNode }) {
 
   const showToast = useToast()
 
-  // so'rov bir zumda tugasa ham aylanish ko'rinsin va natija xabar bilan aytilsin
+  // ma'lumot kelishi bilan tugaydi (sun'iy kutish yo'q), natija xabar bilan aytiladi
   const refresh = async () => {
     if (reloading) return
     setReloading(true)
-    const [error] = await Promise.all([reload(), new Promise((r) => setTimeout(r, 700))])
+    const error = await reload()
     setReloading(false)
     showToast(error ?? t('nav.refreshed'), error ? 'error' : 'success')
   }
@@ -213,16 +214,17 @@ function Layout({ children }: { children: ReactNode }) {
         <div className="flex flex-1 justify-center">
           <GlobalSearch />
         </div>
-        <button
-          type="button"
-          onClick={refresh}
-          disabled={reloading}
-          aria-label={t('nav.refresh')}
-          title={t('nav.refresh')}
-          className={iconBtn}
-        >
-          <RefreshCw className={`size-4 ${reloading ? 'animate-spin' : ''}`} />
-        </button>
+        <Tooltip label={t('nav.refresh')}>
+          <button
+            type="button"
+            onClick={refresh}
+            aria-busy={reloading}
+            aria-label={t('nav.refresh')}
+            className={`${iconBtn} ${reloading ? 'text-blue-600' : ''}`}
+          >
+            <RefreshCw className={`size-4 ${reloading ? 'animate-spin' : ''}`} />
+          </button>
+        </Tooltip>
         <LanguageSwitcher lang={lang} setLang={setLang} label={t('common.language')} />
       </header>
 

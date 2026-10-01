@@ -15,7 +15,7 @@ import { useT } from '../i18n'
 import { formatDateTime } from '../lib/format'
 import { useAdminData, type Message } from '../lib/data'
 import { ConfirmDialog, useToast } from '../components/ui'
-import { glassActive, iconBtn, inputClass, secondaryBtn } from '../components/styles'
+import { alertBadge, iconBtn, inputClass, secondaryBtn } from '../components/styles'
 
 const gmailLink = (email: string) =>
   `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(email)}`
@@ -198,20 +198,29 @@ function Messages() {
           />
         </div>
         <div className="flex flex-wrap gap-2">
-          <div className="flex rounded-lg border border-gray-300 bg-white p-0.5 text-sm">
+          {/* neytral "segment" almashtirgich: tanlangani oq tabletka, yangilar soni yumshoq qizil */}
+          <div role="group" className="flex h-10 items-center gap-0.5 rounded-lg bg-gray-100 p-1 text-sm">
             {[
-              { value: false, label: t('common.all') },
-              { value: true, label: `${t('messages.newFilter')}${unread ? ` (${unread})` : ''}` },
+              { value: false, label: t('common.all'), count: 0 },
+              { value: true, label: t('messages.newFilter'), count: unread },
             ].map((opt) => (
               <button
                 key={String(opt.value)}
                 type="button"
+                aria-pressed={onlyUnread === opt.value}
                 onClick={() => setOnlyUnread(opt.value)}
-                className={`cursor-pointer rounded-md px-3 py-1.5 font-medium transition ${
-                  onlyUnread === opt.value ? glassActive : 'text-gray-600 hover:bg-gray-100'
+                className={`flex h-full cursor-pointer items-center gap-1.5 rounded-md px-3 font-medium transition ${
+                  onlyUnread === opt.value
+                    ? 'bg-blue-100 text-blue-800 shadow-sm ring-1 ring-blue-200'
+                    : 'text-gray-500 hover:text-gray-950'
                 }`}
               >
                 {opt.label}
+                {opt.count > 0 && (
+                  <span className={`rounded-full px-1.5 text-[11px] leading-[18px] font-semibold ${alertBadge}`}>
+                    {opt.count}
+                  </span>
+                )}
               </button>
             ))}
           </div>

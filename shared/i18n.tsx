@@ -10,6 +10,7 @@ import {
 } from 'react'
 import { Check, Globe } from 'lucide-react'
 import { cyrillicDict } from './translit'
+import Tooltip from './Tooltip'
 
 // Uch tilli interfeys (do'kon va admin uchun umumiy mexanizm). Har bir ilova o'z lug'atini
 // beradi: rus tili — asos, ingliz va o'zbek (lotin) lug'atlari TypeScript orqali to'liqligi
@@ -144,18 +145,19 @@ export function LanguageSwitcher({
 
   return (
     <div ref={rootRef} className={`relative ${className}`}>
-      <button
-        type="button"
-        aria-label={label}
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        title={label}
-        onClick={() => setOpen((v) => !v)}
-        className="flex h-9 cursor-pointer items-center gap-1.5 rounded-lg px-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 hover:text-gray-950"
-      >
-        <Globe className="size-4" />
-        {current.short}
-      </button>
+      <Tooltip label={label} hidden={open}>
+        <button
+          type="button"
+          aria-label={label}
+          aria-haspopup="listbox"
+          aria-expanded={open}
+          onClick={() => setOpen((v) => !v)}
+          className="flex h-9 cursor-pointer items-center gap-1.5 rounded-lg px-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 hover:text-gray-950"
+        >
+          <Globe className="size-4" />
+          {current.short}
+        </button>
+      </Tooltip>
       {open && (
         <ul
           role="listbox"

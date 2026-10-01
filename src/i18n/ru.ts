@@ -1,5 +1,8 @@
 // Asosiy lug'at (rus tili). Boshqa tillar shu kalitlarning hammasini to'ldirishi shart.
 const ru = {
+  'products.soldOut': 'нет в наличии',
+  'checkout.soldOut': '«{name}» ({size}) закончился на складе. Удалите его из корзины.',
+  'checkout.lowStock': '«{name}» ({size}): на складе осталось только {count} шт.',
   'common.close': 'Закрыть',
   'common.delete': 'Удалить',
   'common.total': 'Итого',

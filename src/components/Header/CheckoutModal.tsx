@@ -99,6 +99,12 @@ function CheckoutModal({ onClose }: { onClose: () => void }) {
         }),
       })
       const data = await res.json().catch(() => ({}))
+      if (res.status === 409 && data.code === 'out_of_stock')
+        throw new Error(
+          data.available > 0
+            ? t('checkout.lowStock', { name: data.name, size: sizeLabel(lang, data.size), count: data.available })
+            : t('checkout.soldOut', { name: data.name, size: sizeLabel(lang, data.size) }),
+        )
       if (!res.ok) throw new Error(data.error || t('checkout.failed'))
       setOrderId(data.id)
       clearCart()

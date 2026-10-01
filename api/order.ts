@@ -168,6 +168,33 @@ export async function POST(request: Request): Promise<Response> {
     }
     const total = Math.round(items.reduce((s, i) => s + i.price * i.quantity, 0) * 100) / 100
 
+    // ombor: qoldiq bazada bitta tranzaksiyada tekshiriladi va kamaytiriladi (schema.sql: reserve_stock)
+    const stockItems = items.map((i) => ({ productId: i.productId, size: i.size, quantity: i.quantity }))
+    const reserve = await fetch(`${url}/rest/v1/rpc/reserve_stock`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ items: stockItems }),
+    })
+    if (!reserve.ok) throw new Error(`reserve_stock ${reserve.status}: ${await reserve.text()}`)
+    const shortage = (await reserve.json()) as { name: string; size: string; available: number } | null
+    if (shortage)
+      return json(
+        {
+          error:
+            shortage.available > 0
+              ? `«${shortage.name}» (${shortage.size}): на складе осталось только ${shortage.available} шт.`
+              : `«${shortage.name}» (${shortage.size}) закончился на складе`,
+          code: 'out_of_stock',
+          ...shortage,
+        },
+        409,
+      )
+    // buyurtma saqlanmasa, band qilingan qoldiq omborga qaytariladi
+    const release = () =>
+      fetch(`${url}/rest/v1/rpc/release_stock`, { method: 'POST', headers, body: JSON.stringify({ items: stockItems }) }).catch(
+        (err) => console.error('release_stock:', err),
+      )
+
     const insert = await fetch(`${url}/rest/v1/orders`, {
       method: 'POST',
       headers: { ...headers, Prefer: 'return=representation', Accept: 'application/vnd.pgrst.object+json' },
@@ -183,7 +210,10 @@ export async function POST(request: Request): Promise<Response> {
         browser: str(body.browser, 40) || null,
       }),
     })
-    if (!insert.ok) throw new Error(`orders ${insert.status}: ${await insert.text()}`)
+    if (!insert.ok) {
+      await release()
+      throw new Error(`orders ${insert.status}: ${await insert.text()}`)
+    }
     const order = (await insert.json()) as { id: number }
 
     // Telegram — ixtiyoriy; ishlamasa ham buyurtma saqlangan

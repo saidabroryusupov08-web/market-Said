@@ -54,6 +54,9 @@ create index if not exists products_created_at_idx on public.products (created_a
 -- keyin qo'shilgan ustunlar (eski bazada ham qo'shiladi)
 alter table public.products add column if not exists old_price numeric(10, 2) check (old_price > 0);
 alter table public.products add column if not exists is_active boolean not null default true;
+-- ombor: o'lcham -> qoldiq ({"M": 5, "L": 0}). O'lcham kaliti yo'q bo'lsa — hisob yuritilmaydi
+-- (cheklovsiz sotiladi). Buyurtmada qoldiq faqat pastdagi funksiyalar orqali kamayadi/qaytadi.
+alter table public.products add column if not exists stock jsonb not null default '{}'::jsonb;
 alter table public.products enable row level security;
 
 -- yashirilgan (is_active = false) mahsulotni faqat admin ko'radi
@@ -136,6 +139,72 @@ drop policy if exists "buyurtmani faqat admin o'chiradi" on public.orders;
 create policy "buyurtmani faqat admin o'chiradi" on public.orders
   for delete to authenticated using (public.is_admin());
 -- insert qoidasi yo'q: faqat server (service_role) yozadi
+
+-- ========== Ombor: qoldiqni band qilish / qaytarish ==========
+-- items: [{"productId": 1, "size": "M", "quantity": 2}, ...]
+-- reserve_stock: hammasi yetarli bo'lsa birdaniga kamaytiradi va null qaytaradi; bittasi
+-- yetmasa hech narsani o'zgartirmaydi va {"productId","name","size","available"} qaytaradi.
+-- Qatorlar "for update" bilan qulflanadi — bir vaqtdagi ikki buyurtma oxirgi donani ikki marta sotolmaydi.
+create or replace function public.reserve_stock(items jsonb) returns jsonb
+  language plpgsql security definer set search_path = public
+as $$
+declare
+  it jsonb;
+  prod public.products%rowtype;
+  have int;
+begin
+  if not (auth.role() = 'service_role' or public.is_admin()) then
+    raise exception 'forbidden' using errcode = '42501';
+  end if;
+  -- avval tekshiruv (bir mahsulot bir necha qatorda bo'lsa, jami so'ralgani hisoblanadi)
+  for it in
+    select jsonb_build_object('productId', (x ->> 'productId')::bigint, 'size', x ->> 'size',
+                              'quantity', sum((x ->> 'quantity')::int))
+    from jsonb_array_elements(items) x
+    group by (x ->> 'productId')::bigint, x ->> 'size'
+  loop
+    select * into prod from public.products where id = (it ->> 'productId')::bigint for update;
+    if found and prod.stock ? (it ->> 'size') then
+      have := (prod.stock ->> (it ->> 'size'))::int;
+      if have < (it ->> 'quantity')::int then
+        return jsonb_build_object('productId', prod.id, 'name', prod.name, 'size', it ->> 'size', 'available', have);
+      end if;
+    end if;
+  end loop;
+  -- hammasi yetarli: kamaytiriladi (hisob yuritilmaydigan o'lchamlar o'zgarmaydi)
+  for it in select * from jsonb_array_elements(items) loop
+    update public.products
+      set stock = jsonb_set(stock, array[it ->> 'size'],
+                            to_jsonb((stock ->> (it ->> 'size'))::int - (it ->> 'quantity')::int))
+      where id = (it ->> 'productId')::bigint and stock ? (it ->> 'size');
+  end loop;
+  return null;
+end;
+$$;
+
+-- release_stock: bekor qilingan buyurtma qoldig'ini omborga qaytaradi
+create or replace function public.release_stock(items jsonb) returns void
+  language plpgsql security definer set search_path = public
+as $$
+declare
+  it jsonb;
+begin
+  if not (auth.role() = 'service_role' or public.is_admin()) then
+    raise exception 'forbidden' using errcode = '42501';
+  end if;
+  for it in select * from jsonb_array_elements(items) loop
+    update public.products
+      set stock = jsonb_set(stock, array[it ->> 'size'],
+                            to_jsonb((stock ->> (it ->> 'size'))::int + (it ->> 'quantity')::int))
+      where id = (it ->> 'productId')::bigint and stock ? (it ->> 'size');
+  end loop;
+end;
+$$;
+
+revoke all on function public.reserve_stock(jsonb) from public, anon;
+revoke all on function public.release_stock(jsonb) from public, anon;
+grant execute on function public.reserve_stock(jsonb) to authenticated, service_role;
+grant execute on function public.release_stock(jsonb) to authenticated, service_role;
 
 -- ========== Mahsulot rasmlari (Storage) ==========
 -- ochiq (hamma ko'radi), bitta fayl 2 MB gacha, faqat rasm turlari

@@ -11,6 +11,7 @@ import {
   Trash2,
 } from 'lucide-react'
 import { colorLabel, sizeLabel } from '../../../shared/dataLabels'
+import Tooltip from '../../../shared/Tooltip'
 import { useT } from '../i18n'
 import { formatDateTime } from '../lib/format'
 import { useAdminData, type Message } from '../lib/data'
@@ -75,35 +76,38 @@ function MessageCard({
             </span>
             <span className="text-xs text-gray-400">{formatDateTime(m.created_at)}</span>
           </div>
-          <a
-            href={gmailLink(m.email)}
-            target="_blank"
-            rel="noopener noreferrer"
-            title={t('messages.writeGmail')}
-            className="mt-1.5 block truncate text-base font-semibold text-gray-950 select-text hover:text-blue-600"
-          >
-            {m.email}
-          </a>
+          <Tooltip label={t('messages.writeGmail')} align="start" className="mt-1.5 min-w-0">
+            <a
+              href={gmailLink(m.email)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block min-w-0 truncate text-base font-semibold text-gray-950 select-text hover:text-blue-600"
+            >
+              {m.email}
+            </a>
+          </Tooltip>
         </div>
         <div className="flex shrink-0 gap-1">
-          <button
-            type="button"
-            onClick={onToggleRead}
-            aria-label={m.is_read ? t('messages.markNew') : t('messages.markRead')}
-            title={m.is_read ? t('messages.markNew') : t('messages.markRead')}
-            className={iconBtn}
-          >
-            {m.is_read ? <Mail className="size-4" /> : <MailOpen className="size-4" />}
-          </button>
-          <button
-            type="button"
-            onClick={onDelete}
-            aria-label={t('common.delete')}
-            title={t('common.delete')}
-            className={`${iconBtn} hover:bg-red-50 hover:text-red-600`}
-          >
-            <Trash2 className="size-4" />
-          </button>
+          <Tooltip label={m.is_read ? t('messages.markNew') : t('messages.markRead')}>
+            <button
+              type="button"
+              onClick={onToggleRead}
+              aria-label={m.is_read ? t('messages.markNew') : t('messages.markRead')}
+              className={iconBtn}
+            >
+              {m.is_read ? <Mail className="size-4" /> : <MailOpen className="size-4" />}
+            </button>
+          </Tooltip>
+          <Tooltip label={t('common.delete')}>
+            <button
+              type="button"
+              onClick={onDelete}
+              aria-label={t('common.delete')}
+              className={`${iconBtn} hover:bg-red-50 hover:text-red-600`}
+            >
+              <Trash2 className="size-4" />
+            </button>
+          </Tooltip>
         </div>
       </div>
 

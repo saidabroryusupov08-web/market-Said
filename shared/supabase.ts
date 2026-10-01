@@ -27,6 +27,7 @@ export type ProductRow = {
   size_prices: Record<string, number> | null
   old_price: number | string | null
   is_active: boolean | null
+  stock?: Record<string, number> | null
 }
 
 export function fromRow(row: ProductRow): Product {
@@ -46,6 +47,7 @@ export function fromRow(row: ProductRow): Product {
     sizePrices: Object.keys(sizePrices).length > 0 ? sizePrices : undefined,
     oldPrice: row.old_price != null ? Number(row.old_price) : undefined,
     isActive: row.is_active !== false,
+    stock: row.stock ?? {},
   }
 }
 
@@ -62,5 +64,7 @@ export function toRow(p: Omit<Product, 'id' | 'createdAt'>) {
     size_prices: p.sizePrices ?? {},
     old_price: p.oldPrice ?? null,
     is_active: p.isActive !== false,
+    // ombor faqat berilganda yoziladi: mahsulot formasi qoldiqni tasodifan o'chirib yubormasin
+    ...(p.stock !== undefined && { stock: p.stock }),
   }
 }

@@ -4,6 +4,7 @@ import { useCart } from '../../../context/CartContext'
 import type { Product } from '../../../data/products'
 import Select from '../../ui/Select'
 import { colorLabel, sizeLabel } from '../../../../shared/dataLabels'
+import { isSoldOut } from '../../../../shared/stock'
 import { useT } from '../../../i18n'
 
 type ProductOptionsProps = {
@@ -20,7 +21,8 @@ function ProductOptions({ product, size: rawSize, onSizeChange, onAdded }: Produ
   const [rawColor, setColor] = useState('')
   // admin o'lcham/rangni o'chirib yuborsa, eski tanlov hisobga olinmaydi
   // (aks holda maydonda "Размер" turgan bo'lsa ham tugma faol bo'lib qolardi)
-  const size = product.sizes.includes(rawSize) ? rawSize : ''
+  // omborda tugagan o'lcham ham tanlanmagan hisoblanadi
+  const size = product.sizes.includes(rawSize) && !isSoldOut(product, rawSize) ? rawSize : ''
   const color = product.colors.includes(rawColor) ? rawColor : ''
   const [added, setAdded] = useState(false)
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined)
@@ -52,7 +54,11 @@ function ProductOptions({ product, size: rawSize, onSizeChange, onAdded }: Produ
           placeholder={t('products.size')}
           value={size}
           onChange={onSizeChange}
-          options={product.sizes.map((s) => ({ value: s, label: sizeLabel(lang, s) }))}
+          options={product.sizes.map((s) => ({
+            value: s,
+            label: isSoldOut(product, s) ? `${sizeLabel(lang, s)} — ${t('products.soldOut')}` : sizeLabel(lang, s),
+            disabled: isSoldOut(product, s),
+          }))}
           invalid={showHint && !size}
         />
         <Select

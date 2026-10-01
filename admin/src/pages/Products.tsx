@@ -6,6 +6,7 @@ import { hasSizePriceRange, minPrice } from '../../../shared/price'
 import { categoryLabel, tagLabel } from '../../../shared/dataLabels'
 import { categories, discountPercent, type Product } from '../../../shared/products'
 import { createMatcher } from '../../../shared/search'
+import Tooltip from '../../../shared/Tooltip'
 import { useT } from '../i18n'
 import { useAdminData, type ProductInput } from '../lib/data'
 import Select from '../components/Select'
@@ -187,33 +188,36 @@ function Products() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-1">
-                      <button
-                        type="button"
-                        aria-label={p.isActive === false ? t('products.showAria', { name: p.name }) : t('products.hideAria', { name: p.name })}
-                        title={p.isActive === false ? t('products.show') : t('products.hide')}
-                        onClick={() => toggleVisibility(p)}
-                        className={iconBtn}
-                      >
-                        {p.isActive === false ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                      </button>
-                      <button
-                        type="button"
-                        aria-label={t('products.editAria', { name: p.name })}
-                        title={t('common.edit')}
-                        onClick={() => updateParam('edit', String(p.id))}
-                        className={iconBtn}
-                      >
-                        <Pencil className="size-4" />
-                      </button>
-                      <button
-                        type="button"
-                        aria-label={t('products.deleteAria', { name: p.name })}
-                        title={t('common.delete')}
-                        onClick={() => setToDelete(p)}
-                        className={`${iconBtn} hover:bg-red-50 hover:text-red-600`}
-                      >
-                        <Trash2 className="size-4" />
-                      </button>
+                      <Tooltip label={p.isActive === false ? t('products.show') : t('products.hide')}>
+                        <button
+                          type="button"
+                          aria-label={p.isActive === false ? t('products.showAria', { name: p.name }) : t('products.hideAria', { name: p.name })}
+                          onClick={() => toggleVisibility(p)}
+                          className={iconBtn}
+                        >
+                          {p.isActive === false ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                        </button>
+                      </Tooltip>
+                      <Tooltip label={t('common.edit')}>
+                        <button
+                          type="button"
+                          aria-label={t('products.editAria', { name: p.name })}
+                          onClick={() => updateParam('edit', String(p.id))}
+                          className={iconBtn}
+                        >
+                          <Pencil className="size-4" />
+                        </button>
+                      </Tooltip>
+                      <Tooltip label={t('common.delete')}>
+                        <button
+                          type="button"
+                          aria-label={t('products.deleteAria', { name: p.name })}
+                          onClick={() => setToDelete(p)}
+                          className={`${iconBtn} hover:bg-red-50 hover:text-red-600`}
+                        >
+                          <Trash2 className="size-4" />
+                        </button>
+                      </Tooltip>
                     </div>
                   </td>
                 </tr>

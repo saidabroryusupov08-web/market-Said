@@ -11,8 +11,10 @@ import {
   RefreshCw,
   ShoppingBag,
   ShieldCheck,
+  Warehouse,
   X,
 } from 'lucide-react'
+import { stockStatus } from '../../../shared/stock'
 import { LanguageSwitcher } from '../../../shared/i18n'
 import Logo from '../../../shared/Logo'
 import Tooltip from '../../../shared/Tooltip'
@@ -36,6 +38,7 @@ function Sidebar({
 }) {
   const { state, signOut } = useAuth()
   const { products, unread, newOrders } = useAdminData()
+  const outOfStock = products.filter((p) => stockStatus(p) === 'out').length
   const email = state.status === 'admin' ? (state.session.user.email ?? '') : ''
   const profile = state.status === 'admin' ? profileOf(state.session) : null
   const mfaEnabled = state.status === 'admin' && state.mfaEnabled
@@ -47,6 +50,8 @@ function Sidebar({
     { to: '/products', label: t('nav.products'), Icon: Package, badge: products.length || null },
     { to: '/messages', label: t('nav.messages'), Icon: Inbox, badge: unread || null, highlight: true },
     { to: '/analytics', label: t('nav.analytics'), Icon: BarChart3, badge: null },
+    // omborda tugagan mahsulotlar soni — qizil (e'tibor talab qiladi)
+    { to: '/stock', label: t('nav.stock'), Icon: Warehouse, badge: outOfStock || null, highlight: true },
   ]
 
   return (
@@ -108,35 +113,38 @@ function Sidebar({
       <div className="border-t border-gray-200 p-3">
         <div className="flex items-center gap-1">
           {/* profil: parol va 2FA sozlamalari */}
-          <button
-            type="button"
-            onClick={() => {
-              onNavigate?.()
-              onOpenSecurity()
-            }}
-            title={t('nav.profileTitle')}
-            className="flex min-w-0 flex-1 cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition hover:bg-gray-100"
-          >
-            <Avatar src={profile?.avatarUrl ?? null} name={profile?.displayName ?? email} />
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-xs font-medium text-gray-950">
-                {profile?.displayName ?? email}
+          <Tooltip label={t('nav.profileTitle')} side="top" align="start" className="min-w-0 flex-1">
+            <button
+              type="button"
+              aria-haspopup="dialog"
+              onClick={() => {
+                onNavigate?.()
+                onOpenSecurity()
+              }}
+              className="flex min-w-0 flex-1 cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition hover:bg-gray-100"
+            >
+              <Avatar src={profile?.avatarUrl ?? null} name={profile?.displayName ?? email} />
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-xs font-medium text-gray-950">
+                  {profile?.displayName ?? email}
+                </span>
+                <span className="flex items-center gap-1 text-[11px] text-gray-400">
+                  <ShieldCheck className={`size-3 ${mfaEnabled ? 'text-green-600' : ''}`} />
+                  {mfaEnabled ? t('nav.mfaOn') : t('nav.security')}
+                </span>
               </span>
-              <span className="flex items-center gap-1 text-[11px] text-gray-400">
-                <ShieldCheck className={`size-3 ${mfaEnabled ? 'text-green-600' : ''}`} />
-                {mfaEnabled ? t('nav.mfaOn') : t('nav.security')}
-              </span>
-            </span>
-          </button>
-          <button
-            type="button"
-            onClick={() => signOut()}
-            aria-label={t('nav.signOut')}
-            title={t('nav.signOut')}
-            className={iconBtn}
-          >
-            <LogOut className="size-4" />
-          </button>
+            </button>
+          </Tooltip>
+          <Tooltip label={t('nav.signOut')} side="top">
+            <button
+              type="button"
+              onClick={() => signOut()}
+              aria-label={t('nav.signOut')}
+              className={iconBtn}
+            >
+              <LogOut className="size-4" />
+            </button>
+          </Tooltip>
         </div>
       </div>
     </div>
@@ -149,6 +157,7 @@ const titles = {
   '/products': 'nav.products',
   '/messages': 'nav.messages',
   '/analytics': 'nav.analytics',
+  '/stock': 'nav.stock',
 } as const
 
 function Layout({ children }: { children: ReactNode }) {

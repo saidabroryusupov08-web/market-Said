@@ -29,6 +29,8 @@ export type Product = {
   oldPrice?: number
   // false — mahsulot saytda ko'rinmaydi (admin vaqtincha yashirgan)
   isActive?: boolean
+  // ombor: o'lcham -> qoldiq. Kaliti yo'q o'lcham hisobga olinmaydi (cheklovsiz); shared/stock.ts
+  stock?: Record<string, number>
   createdAt?: string
 }
 

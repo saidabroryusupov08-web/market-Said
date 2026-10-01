@@ -1,6 +1,9 @@
 import type { Dict } from './ru'
 
 const en: Dict = {
+  'products.soldOut': 'out of stock',
+  'checkout.soldOut': '“{name}” ({size}) is out of stock. Please remove it from the cart.',
+  'checkout.lowStock': '“{name}” ({size}): only {count} left in stock.',
   'common.close': 'Close',
   'common.delete': 'Delete',
   'common.total': 'Total',

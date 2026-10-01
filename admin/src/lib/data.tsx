@@ -70,6 +70,8 @@ type AdminDataValue = {
   markAllRead: () => Result
   deleteMessage: (id: number) => Result
   updateOrder: (id: number, changes: Partial<Pick<Order, 'status' | 'admin_note'>>) => Result
+  // ombordagi qoldiqni qo'lda belgilash (o'lcham -> dona)
+  saveStock: (id: number, stock: Record<string, number>) => Result
   deleteOrder: (id: number) => Result
   siteSettings: SiteSettings
   saveSiteSettings: (next: SiteSettings) => Result
@@ -258,12 +260,44 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
     )
 
   // ----- buyurtmalar -----
+  // Buyurtma bekor qilinsa — mahsulotlar omborga qaytadi; bekor qilish ortga olinsa — qayta band
+  // qilinadi (omborda yetmasa, holat o'zgarmaydi). Hisob yuritilmagan o'lchamlarga tegilmaydi.
   const updateOrder = async (id: number, changes: Partial<Pick<Order, 'status' | 'admin_note'>>) => {
+    const order = orders.find((o) => o.id === id)
+    const wasCancelled = order?.status === 'cancelled'
+    const stockMove =
+      order && changes.status && wasCancelled !== (changes.status === 'cancelled')
+        ? order.items.map((i) => ({ productId: i.productId, size: i.size, quantity: i.quantity }))
+        : null
+
+    if (stockMove && wasCancelled) {
+      const { data, error } = await db.rpc('reserve_stock', { items: stockMove })
+      if (error) return describe(error)
+      const shortage = data as { name: string; size: string; available: number } | null
+      if (shortage) return tr('stock.cannotRestore', { name: shortage.name, size: shortage.size, count: shortage.available })
+    }
+
     const previous = orders
     setOrders((list) => list.map((o) => (o.id === id ? { ...o, ...changes } : o)))
     const { error } = await db.from('orders').update(changes).eq('id', id)
-    if (error) setOrders(previous)
-    return describe(error)
+    if (error) {
+      setOrders(previous)
+      if (stockMove && wasCancelled) await db.rpc('release_stock', { items: stockMove })
+      return describe(error)
+    }
+    if (stockMove && !wasCancelled) {
+      const { error: releaseError } = await db.rpc('release_stock', { items: stockMove })
+      if (releaseError) return describe(releaseError)
+    }
+    if (stockMove) await loadProducts()
+    return null
+  }
+
+  const saveStock = async (id: number, stock: Record<string, number>) => {
+    const { data, error } = await db.from('products').update({ stock }).eq('id', id).select().single()
+    if (error) return describe(error)
+    setProducts((prev) => prev.map((p) => (p.id === id ? fromRow(data as ProductRow) : p)))
+    return null
   }
 
   // ----- sayt bosh sahifasi -----
@@ -297,6 +331,7 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
         unread: messages.filter((m) => !m.is_read).length,
         newOrders: orders.filter((o) => o.status === 'new').length,
         updateOrder,
+        saveStock,
         siteSettings,
         saveSiteSettings,
         deleteOrder,

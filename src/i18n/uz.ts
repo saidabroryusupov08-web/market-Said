@@ -1,6 +1,9 @@
 import type { Dict } from './ru'
 
 const uz: Dict = {
+  'products.soldOut': 'omborda yo‘q',
+  'checkout.soldOut': '«{name}» ({size}) omborda tugadi. Uni savatdan olib tashlang.',
+  'checkout.lowStock': '«{name}» ({size}): omborda faqat {count} dona qoldi.',
   'common.close': 'Yopish',
   'common.delete': "O'chirish",
   'common.total': 'Jami',

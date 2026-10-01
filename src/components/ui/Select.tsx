@@ -4,7 +4,8 @@ import { Check, ChevronDown } from 'lucide-react'
 type SelectProps = {
   value: string
   onChange: (value: string) => void
-  options: { value: string; label: string }[]
+  // disabled — ro'yxatda ko'rinadi, lekin tanlab bo'lmaydi (masalan, omborda tugagan o'lcham)
+  options: { value: string; label: string; disabled?: boolean }[]
   placeholder?: string
   className?: string
   ariaLabel: string
@@ -58,7 +59,9 @@ function Select({
       setActive((i) => (i + step + options.length) % options.length)
     } else if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault()
-      if (open) choose(options[active].value)
+      if (open) {
+        if (!options[active].disabled) choose(options[active].value)
+      }
       else openList()
     }
   }
@@ -111,12 +114,13 @@ function Select({
               key={option.value}
               role="option"
               aria-selected={isSelected}
+              aria-disabled={option.disabled || undefined}
               onMouseEnter={() => setActive(index)}
               onMouseDown={(e) => e.preventDefault()}
-              onClick={() => choose(option.value)}
-              className={`flex cursor-pointer items-center justify-between gap-2 rounded-md px-2.5 py-2 text-sm text-gray-950 ${
-                index === active ? 'bg-gray-100' : ''
-              } ${isSelected ? 'font-medium' : ''}`}
+              onClick={() => !option.disabled && choose(option.value)}
+              className={`flex items-center justify-between gap-2 rounded-md px-2.5 py-2 text-sm ${
+                option.disabled ? 'cursor-not-allowed text-gray-400 line-through decoration-gray-300' : 'cursor-pointer text-gray-950'
+              } ${index === active && !option.disabled ? 'bg-gray-100' : ''} ${isSelected ? 'font-medium' : ''}`}
             >
               {option.label}
               {isSelected && <Check className="size-4 shrink-0" />}

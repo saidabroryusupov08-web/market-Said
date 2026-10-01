@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import QRCode from 'qrcode'
-import { AlertTriangle, Check, Copy, Download, Printer, ShieldCheck, Store } from 'lucide-react'
+import { AlertTriangle, Check, Copy, Download, Mail, MessageCircle, Printer, Send, Share2, ShieldCheck, Store } from 'lucide-react'
 import { useT } from '../i18n'
 import { useToast } from '../components/ui'
 import { secondaryBtn } from '../components/styles'
@@ -47,6 +47,89 @@ function download(href: string, name: string) {
   a.click()
 }
 
+// "Поделиться": telefonda — tizimning ulashish oynasi (QR rasm + havola), kompyuterda — menyu
+function ShareButton({ url, title, makeFile }: { url: string; title: string; makeFile: () => Promise<File> }) {
+  const { t } = useT()
+  const showToast = useToast()
+  const [open, setOpen] = useState(false)
+  const rootRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const onDown = (e: MouseEvent) => {
+      if (!rootRef.current?.contains(e.target as Node)) setOpen(false)
+    }
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false)
+    document.addEventListener('mousedown', onDown)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDown)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [open])
+
+  const text = t('qr.shareText', { title })
+  const share = async () => {
+    // telefon (va Windows/Mac'dagi zamonaviy brauzer): QR rasmi bilan birga yuboriladi
+    if (navigator.share) {
+      try {
+        const file = await makeFile()
+        const data: ShareData = navigator.canShare?.({ files: [file] }) ? { files: [file], title, text: `${text} ${url}` } : { title, text, url }
+        await navigator.share(data)
+        return
+      } catch (err) {
+        if ((err as Error).name === 'AbortError') return
+      }
+    }
+    setOpen((v) => !v)
+  }
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(`${text} ${url}`)
+      showToast(t('qr.copied'))
+    } catch {
+      showToast(t('qr.copyFailed'), 'error')
+    }
+    setOpen(false)
+  }
+  const links = [
+    { key: 'telegram', label: 'Telegram', Icon: Send, href: `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}` },
+    { key: 'whatsapp', label: 'WhatsApp', Icon: MessageCircle, href: `https://wa.me/?text=${encodeURIComponent(`${text} ${url}`)}` },
+    { key: 'email', label: 'Email', Icon: Mail, href: `mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(`${text}\n${url}`)}` },
+  ]
+
+  return (
+    <div ref={rootRef} className="relative">
+      <button type="button" onClick={share} aria-haspopup="menu" aria-expanded={open} className="flex h-9 w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-gray-950 px-3 text-xs font-semibold text-white transition hover:bg-gray-800">
+        <Share2 className="size-3.5" />
+        {t('qr.share')}
+      </button>
+      {open && (
+        <div role="menu" className="absolute right-0 bottom-full z-30 mb-2 w-52 animate-[fade-in_120ms_ease-out] rounded-xl border border-gray-200 bg-white p-1 shadow-xl">
+          {links.map(({ key, label, Icon, href }) => (
+            <a
+              key={key}
+              role="menuitem"
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-gray-800 hover:bg-gray-100"
+            >
+              <Icon className="size-4 text-gray-500" />
+              {label}
+            </a>
+          ))}
+          <button type="button" role="menuitem" onClick={copy} className="flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm text-gray-800 hover:bg-gray-100">
+            <Copy className="size-4 text-gray-500" />
+            {t('qr.copyLink')}
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function QrCard({
   kind,
   url,
@@ -79,6 +162,10 @@ function QrCard({
   }, [url])
 
   const file = `cx-shop-qr-${kind}`
+  const makeFile = async () => {
+    const blob = await (await fetch(await makePng(url, title))).blob()
+    return new File([blob], `${file}.png`, { type: 'image/png' })
+  }
   const savePng = async () => download(await makePng(url, title), `${file}.png`)
   const saveSvg = () => {
     const href = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }))
@@ -134,7 +221,9 @@ function QrCard({
               {t('qr.localWarning')}
             </p>
           )}
-          <div className="mt-auto grid w-full grid-cols-2 gap-2 sm:grid-cols-4">
+          <div className="mt-auto flex w-full flex-col gap-2">
+          <ShareButton url={url} title={title} makeFile={makeFile} />
+          <div className="grid w-full grid-cols-2 gap-2 sm:grid-cols-4">
             <button type="button" onClick={savePng} disabled={!svg} className={`${secondaryBtn} h-9 text-xs`}>
               <Download className="size-3.5" />
               PNG
@@ -151,6 +240,7 @@ function QrCard({
               <Printer className="size-3.5" />
               {t('qr.print')}
             </button>
+          </div>
           </div>
         </div>
       ) : (

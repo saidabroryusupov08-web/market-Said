@@ -13,31 +13,18 @@ import Logo from '../../../shared/Logo'
 import { useCart } from '../../context/CartContext'
 import { getClientInfo } from '../../utils/device'
 import { validateEmail } from '../../utils/email'
+import { useT } from '../../i18n'
 
 const linkGroups = [
   {
-    title: 'Магазин',
-    links: [
-      'Новинки',
-      'Мужская коллекция',
-      'Женская коллекция',
-      'Детская коллекция',
-      'Товары со скидкой',
-      'Аксессуары',
-    ],
+    title: 'footer.shop',
+    links: ['footer.newArrivals', 'footer.men', 'footer.women', 'footer.kids', 'footer.sale', 'footer.accessories'],
   },
   {
-    title: 'Обслуживание клиентов',
-    links: [
-      'Связаться с нами',
-      'Таблица размеров',
-      'Информация о доставке',
-      'Возврат и обмен',
-      'Частые вопросы',
-      'Отследить заказ',
-    ],
+    title: 'footer.service',
+    links: ['footer.contact', 'footer.sizeGuide', 'footer.shipping', 'footer.returns', 'footer.faq', 'footer.track'],
   },
-]
+] as const
 
 const socials = [
   { label: 'Instagram', Icon: InstagramIcon, href: 'https://instagram.com/ksimov.19' },
@@ -71,7 +58,7 @@ const contacts = [
   { Icon: Phone, text: '+998 50 550 77 17', href: 'tel:+998505507717', external: false },
 ]
 
-const legalLinks = ['Политика конфиденциальности', 'Условия использования', 'Политика cookie']
+const legalLinks = ['footer.privacy', 'footer.terms', 'footer.cookies'] as const
 
 const linkClass = 'text-gray-500 transition hover:text-gray-950'
 
@@ -83,6 +70,7 @@ function Footer() {
   // spam-botlar uchun tuzoq: odamga ko'rinmaydi, uni faqat avtomatik botlar to'ldiradi
   const [website, setWebsite] = useState('')
   const { items, total } = useCart()
+  const { t } = useT()
 
   // email Vercel funksiyasi (api/subscribe.ts) orqali admin panel (Supabase) va Telegram botga yuboriladi
   const handleSubmit = async (e: FormEvent) => {
@@ -115,7 +103,7 @@ function Footer() {
       setEmail('')
     } catch {
       // email o'chirilmaydi, foydalanuvchi qayta urinib ko'rishi mumkin
-      setError('Не удалось отправить. Попробуйте позже.')
+      setError(t('footer.sendFailed'))
     } finally {
       setSending(false)
     }
@@ -126,12 +114,11 @@ function Footer() {
       <div className="mx-auto w-[90%] lg:w-[70%]">
         <div className="grid gap-10 py-14 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_1.4fr] lg:gap-8">
           <div>
-            <a href="#" aria-label="cX-shop — наверх" className="inline-block">
+            <a href="#" aria-label={t('footer.toTop')} className="inline-block">
               <Logo />
             </a>
             <p className="mt-4 max-w-60 text-gray-500">
-              Ваш магазин premium-моды и одежды. Качество и стиль в каждой
-              вещи, которую мы предлагаем.
+              {t('footer.about')}
             </p>
             <div className="mt-4 grid w-fit grid-cols-4 gap-2">
               {socials.map(({ label, Icon, href }) => (
@@ -151,12 +138,12 @@ function Footer() {
 
           {linkGroups.map((group) => (
             <div key={group.title}>
-              <h3 className="text-lg font-medium text-gray-950">{group.title}</h3>
+              <h3 className="text-lg font-medium text-gray-950">{t(group.title)}</h3>
               <ul className="mt-4 flex flex-col gap-2">
                 {group.links.map((link) => (
                   <li key={link}>
                     <a href="#" className={linkClass}>
-                      {link}
+                      {t(link)}
                     </a>
                   </li>
                 ))}
@@ -165,14 +152,14 @@ function Footer() {
           ))}
 
           <div>
-            <h3 className="text-lg font-medium text-gray-950">Будьте в курсе</h3>
+            <h3 className="text-lg font-medium text-gray-950">{t('footer.newsletter')}</h3>
             <p className="mt-4 text-gray-500">
-              Подпишитесь, чтобы узнавать о новинках и эксклюзивных предложениях.
+              {t('footer.newsletterText')}
             </p>
 
             {subscribed ? (
               <p className="mt-4 rounded-lg bg-green-50 px-3 py-2.5 text-sm text-green-700">
-                Спасибо за подписку!
+                {t('footer.thanks')}
               </p>
             ) : (
               // noValidate: brauzerning inglizcha xabari o'rniga o'zimizning tekshiruv ishlaydi
@@ -197,7 +184,7 @@ function Footer() {
                       setEmail(e.target.value)
                       setError('')
                     }}
-                    placeholder="Введите email"
+                    placeholder={t('footer.emailPlaceholder')}
                     aria-label="Email"
                     aria-invalid={!!error}
                     aria-describedby={error ? 'subscribe-error' : undefined}
@@ -216,7 +203,7 @@ function Footer() {
                         : 'cursor-pointer bg-gray-950 hover:bg-gray-800'
                     }`}
                   >
-                    {sending ? 'Отправка...' : 'Подписаться'}
+                    {sending ? t('common.sending') : t('footer.subscribe')}
                   </button>
                 </div>
                 {error && (
@@ -245,12 +232,12 @@ function Footer() {
         </div>
 
         <div className="flex flex-col gap-4 border-t border-gray-200 py-8 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-gray-500">© 2026 cX-shop. Все права защищены.</p>
+          <p className="text-gray-500">{t('footer.rights')}</p>
           <ul className="flex flex-wrap gap-x-6 gap-y-2">
             {legalLinks.map((link) => (
               <li key={link}>
                 <a href="#" className={linkClass}>
-                  {link}
+                  {t(link)}
                 </a>
               </li>
             ))}

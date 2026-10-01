@@ -5,6 +5,8 @@ import { discountPercent, type Product } from '../../../data/products'
 import ProductImage from './ProductImage'
 import ProductOptions from './ProductOptions'
 import ProductPrice from './ProductPrice'
+import { categoryLabel } from '../../../../shared/dataLabels'
+import { useT } from '../../../i18n'
 
 type ProductCardProps = {
   product: Product
@@ -13,6 +15,7 @@ type ProductCardProps = {
 
 function ProductCard({ product, onQuickView }: ProductCardProps) {
   const { isLiked, toggleLike: toggleWishlist } = useWishlist()
+  const { t, lang } = useT()
   const liked = isLiked(product.id)
   // layk qaytarib olinganda tugma sichqoncha kartadan chiqquncha yashirin turadi
   const [hideLike, setHideLike] = useState(false)
@@ -46,7 +49,7 @@ function ProductCard({ product, onQuickView }: ProductCardProps) {
         )}
         <button
           type="button"
-          aria-label={liked ? 'Убрать из избранного' : 'Добавить в избранное'}
+          aria-label={liked ? t('products.unlike') : t('products.like')}
           aria-pressed={liked}
           onClick={toggleLike}
           className={`absolute top-3 right-3 flex size-9 cursor-pointer items-center justify-center rounded-full bg-white shadow-md transition duration-300 hover:scale-110 ${likeVisibility}`}
@@ -62,7 +65,7 @@ function ProductCard({ product, onQuickView }: ProductCardProps) {
           onClick={() => onQuickView(product)}
           className="absolute inset-x-4 bottom-4 cursor-pointer rounded-md bg-gray-600/80 py-2 text-sm font-semibold text-white backdrop-blur-sm transition duration-300 hover:bg-gray-700/90 lg:translate-y-4 lg:opacity-0 lg:group-hover:translate-y-0 lg:group-hover:opacity-100 lg:focus:translate-y-0 lg:focus:opacity-100"
         >
-          Быстрый просмотр
+          {t('products.quickView')}
         </button>
       </div>
 
@@ -71,7 +74,7 @@ function ProductCard({ product, onQuickView }: ProductCardProps) {
         <div className="flex items-start justify-between gap-3">
           <h3 className="text-lg text-gray-950">{product.name}</h3>
           <span className="shrink-0 rounded-md border border-gray-200 px-2 py-0.5 text-xs font-semibold text-gray-950">
-            {product.category}
+            {categoryLabel(lang, product.category)}
           </span>
         </div>
         <div className="mt-auto pt-2">

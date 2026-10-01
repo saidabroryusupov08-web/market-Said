@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Eye, EyeOff } from 'lucide-react'
+import { useT } from '../i18n'
 import { inputClass } from './styles'
 
 function PasswordInput({
@@ -18,6 +19,7 @@ function PasswordInput({
   invalid?: boolean
 }) {
   const [visible, setVisible] = useState(false)
+  const { t } = useT()
   return (
     <div className="relative">
       <input
@@ -31,7 +33,7 @@ function PasswordInput({
       />
       <button
         type="button"
-        aria-label={visible ? 'Скрыть пароль' : 'Показать пароль'}
+        aria-label={visible ? t('password.hide') : t('password.show')}
         onClick={() => setVisible((v) => !v)}
         className="absolute top-1/2 right-2.5 -translate-y-1/2 cursor-pointer text-gray-400 hover:text-gray-700"
       >

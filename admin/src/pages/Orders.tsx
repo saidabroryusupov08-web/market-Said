@@ -5,18 +5,22 @@ import { resolveImage } from '../../../shared/images'
 import { createMatcher } from '../../../shared/search'
 import { useAdminData } from '../lib/data'
 import { ORDER_STATUSES, type Order, type OrderStatus } from '../lib/orders'
+import { colorLabel, sizeLabel } from '../../../shared/dataLabels'
+import { useT } from '../i18n'
 import { formatDateTime } from '../lib/format'
 import { ConfirmDialog, Modal, useToast } from '../components/ui'
 import { alertBadge, glassChip, inputClass, labelClass, primaryBtn, secondaryBtn } from '../components/styles'
 
 const statusInfo = (status: OrderStatus) =>
   ORDER_STATUSES.find((s) => s.value === status) ?? ORDER_STATUSES[0]
+const statusKey = (status: OrderStatus) => `status.${status}` as const
 
 export function StatusBadge({ status }: { status: OrderStatus }) {
   const info = statusInfo(status)
+  const { t } = useT()
   return (
     <span className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold whitespace-nowrap ring-1 ring-inset ${info.className}`}>
-      {info.label}
+      {t(statusKey(status))}
     </span>
   )
 }
@@ -24,13 +28,14 @@ export function StatusBadge({ status }: { status: OrderStatus }) {
 const itemCount = (o: Order) => o.items.reduce((sum, i) => sum + i.quantity, 0)
 
 // Excel to'g'ri ochishi uchun: ; ajratgich, BOM, qo'shtirnoqlar ikkilanadi
-function toCsv(list: Order[]) {
+type TFn = ReturnType<typeof useT>['t']
+function toCsv(list: Order[], t: TFn) {
   const cell = (value: unknown) => `"${String(value ?? '').replace(/"/g, '""')}"`
-  const header = ['№', 'Дата', 'Статус', 'Имя', 'Телефон', 'Email', 'Адрес', 'Товары', 'Сумма', 'Комментарий', 'Заметка']
+  const header = ['№', t('orders.colDate'), t('orders.colStatus'), t('orders.name'), t('orders.phone'), 'Email', t('orders.address'), t('orders.colItems'), t('orders.colTotal'), t('orders.comment'), t('orders.note')]
   const rows = list.map((o) => [
     o.id,
     formatDateTime(o.created_at),
-    statusInfo(o.status).label,
+    t(statusKey(o.status)),
     o.customer_name,
     o.phone,
     o.email,
@@ -46,30 +51,31 @@ function toCsv(list: Order[]) {
 function OrderDetails({ order, onClose }: { order: Order; onClose: () => void }) {
   const { updateOrder, deleteOrder } = useAdminData()
   const showToast = useToast()
+  const { t, lang } = useT()
   const [note, setNote] = useState(order.admin_note ?? '')
   const [confirmDelete, setConfirmDelete] = useState(false)
 
   const setStatus = async (status: OrderStatus) => {
     if (status === order.status) return
     const error = await updateOrder(order.id, { status })
-    showToast(error ?? `Статус: ${statusInfo(status).label}`, error ? 'error' : 'success')
+    showToast(error ?? t('orders.statusSet', { status: t(statusKey(status)) }), error ? 'error' : 'success')
   }
 
   const saveNote = async () => {
     const error = await updateOrder(order.id, { admin_note: note.trim() || null })
-    showToast(error ?? 'Заметка сохранена', error ? 'error' : 'success')
+    showToast(error ?? t('orders.noteSaved'), error ? 'error' : 'success')
   }
 
   const remove = async () => {
     setConfirmDelete(false)
     const error = await deleteOrder(order.id)
     if (error) return showToast(error, 'error')
-    showToast(`Заказ №${order.id} удалён`)
+    showToast(t('orders.deleted', { id: order.id }))
     onClose()
   }
 
   return (
-    <Modal title={`Заказ №${order.id}`} onClose={onClose}>
+    <Modal title={t('orders.title', { id: order.id })} onClose={onClose}>
       <div className="flex flex-col gap-5 p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <span className="text-sm text-gray-500">{formatDateTime(order.created_at)}</span>
@@ -77,7 +83,7 @@ function OrderDetails({ order, onClose }: { order: Order; onClose: () => void })
         </div>
 
         <div>
-          <span className={labelClass}>Статус заказа</span>
+          <span className={labelClass}>{t('orders.orderStatus')}</span>
           <div className="flex flex-wrap gap-1.5">
             {ORDER_STATUSES.map((s) => (
               <button
@@ -91,7 +97,7 @@ function OrderDetails({ order, onClose }: { order: Order; onClose: () => void })
                     : 'border-gray-300 text-gray-600 hover:bg-gray-100'
                 }`}
               >
-                {s.label}
+                {t(statusKey(s.value))}
               </button>
             ))}
           </div>
@@ -123,7 +129,7 @@ function OrderDetails({ order, onClose }: { order: Order; onClose: () => void })
         </div>
 
         <div>
-          <span className={labelClass}>Товары ({itemCount(order)} шт.)</span>
+          <span className={labelClass}>{t('orders.itemsCount', { count: itemCount(order) })}</span>
           <ul className="divide-y divide-gray-100 rounded-lg border border-gray-200">
             {order.items.map((item, i) => {
               const src = resolveImage(item.image)
@@ -135,7 +141,7 @@ function OrderDetails({ order, onClose }: { order: Order; onClose: () => void })
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-medium text-gray-950">{item.name}</span>
                     <span className="block text-xs text-gray-500">
-                      {item.size}, {item.color} · ${Number(item.price).toFixed(2)} × {item.quantity}
+                      {sizeLabel(lang, item.size)}, {colorLabel(lang, item.color)} · ${Number(item.price).toFixed(2)} × {item.quantity}
                     </span>
                   </span>
                   <span className="shrink-0 text-sm font-medium text-gray-950">
@@ -146,21 +152,21 @@ function OrderDetails({ order, onClose }: { order: Order; onClose: () => void })
             })}
           </ul>
           <p className="mt-2 flex justify-between px-1 text-base font-semibold text-gray-950">
-            <span>Итого</span>
+            <span>{t('orders.total')}</span>
             <span>${Number(order.total).toFixed(2)}</span>
           </p>
         </div>
 
         <div>
           <label className={labelClass} htmlFor="order-note">
-            Заметка администратора (клиент её не видит)
+            {t('orders.noteLabel')}
           </label>
           <textarea
             id="order-note"
             rows={2}
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder="Например: позвонил, доставка в пятницу"
+            placeholder={t('orders.notePlaceholder')}
             className={`${inputClass} h-auto py-2`}
           />
           <button
@@ -169,13 +175,13 @@ function OrderDetails({ order, onClose }: { order: Order; onClose: () => void })
             disabled={(order.admin_note ?? '') === note.trim()}
             className={`${secondaryBtn} mt-2`}
           >
-            Сохранить заметку
+            {t('orders.saveNote')}
           </button>
         </div>
 
         {(order.device || order.browser) && (
           <p className="text-xs text-gray-400">
-            Оформлен с устройства: {[order.device, order.browser].filter(Boolean).join(' · ')}
+            {t('orders.device', { device: [order.device, order.browser].filter(Boolean).join(' · ') })}
           </p>
         )}
 
@@ -186,10 +192,10 @@ function OrderDetails({ order, onClose }: { order: Order; onClose: () => void })
             className={`${secondaryBtn} h-10 text-red-600 hover:bg-red-50`}
           >
             <Trash2 className="size-4" />
-            Удалить
+            {t('common.delete')}
           </button>
           <button type="button" onClick={onClose} className={primaryBtn}>
-            Готово
+            {t('common.done')}
           </button>
         </div>
       </div>
@@ -197,7 +203,7 @@ function OrderDetails({ order, onClose }: { order: Order; onClose: () => void })
       {confirmDelete && (
         <ConfirmDialog
           withPassword
-          message={`Удалить заказ №${order.id}? Лучше поставить статус «Отменён» — так он останется в истории.`}
+          message={t('orders.deleteConfirm', { id: order.id })}
           onConfirm={remove}
           onCancel={() => setConfirmDelete(false)}
         />
@@ -208,6 +214,7 @@ function OrderDetails({ order, onClose }: { order: Order; onClose: () => void })
 
 function Orders() {
   const { orders, ordersLoaded } = useAdminData()
+  const { t } = useT()
   const [params, setParams] = useSearchParams()
   const [search, setSearch] = useState('')
   const statusFilter = (params.get('status') as OrderStatus | null) ?? null
@@ -241,7 +248,7 @@ function Orders() {
   }, [orders, search, statusFilter])
 
   const exportCsv = () => {
-    const url = URL.createObjectURL(new Blob([toCsv(visible)], { type: 'text/csv;charset=utf-8' }))
+    const url = URL.createObjectURL(new Blob([toCsv(visible, t)], { type: 'text/csv;charset=utf-8' }))
     const a = document.createElement('a')
     a.href = url
     a.download = `cx-shop-zakazy-${new Date().toISOString().slice(0, 10)}.csv`
@@ -250,31 +257,31 @@ function Orders() {
   }
 
   const tabs: { value: OrderStatus | null; label: string; count: number }[] = [
-    { value: null, label: 'Все', count: orders.length },
-    ...ORDER_STATUSES.map((s) => ({ value: s.value, label: s.label, count: counts[s.value] ?? 0 })),
+    { value: null, label: t('common.all'), count: orders.length },
+    ...ORDER_STATUSES.map((s) => ({ value: s.value, label: t(statusKey(s.value)), count: counts[s.value] ?? 0 })),
   ]
 
   return (
     <div>
       <div className="mb-4 flex gap-1 overflow-x-auto overflow-y-hidden border-b border-gray-200 [scrollbar-width:none]">
-        {tabs.map((t) => (
+        {tabs.map((tab) => (
           <button
-            key={t.value ?? 'all'}
+            key={tab.value ?? 'all'}
             type="button"
-            onClick={() => updateParam('status', t.value)}
+            onClick={() => updateParam('status', tab.value)}
             className={`-mb-px flex shrink-0 cursor-pointer items-center gap-1.5 border-b-2 px-3 py-2 text-sm font-medium whitespace-nowrap transition ${
-              statusFilter === t.value
+              statusFilter === tab.value
                 ? 'border-gray-950 text-gray-950'
                 : 'border-transparent text-gray-500 hover:text-gray-800'
             }`}
           >
-            {t.label}
+            {tab.label}
             <span
               className={`rounded-full px-1.5 py-0.5 text-[10px] leading-none font-semibold ${
-                t.value === 'new' && t.count > 0 ? alertBadge : 'bg-gray-100 text-gray-500'
+                tab.value === 'new' && tab.count > 0 ? alertBadge : 'bg-gray-100 text-gray-500'
               }`}
             >
-              {t.count}
+              {tab.count}
             </span>
           </button>
         ))}
@@ -285,7 +292,7 @@ function Orders() {
           <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-gray-400" />
           <input
             className={`${inputClass} pl-9`}
-            placeholder="Поиск: №, имя, телефон, адрес, товар..."
+            placeholder={t('orders.searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -297,14 +304,14 @@ function Orders() {
       </div>
 
       {!ordersLoaded ? (
-        <p className="py-16 text-center text-sm text-gray-400">Загрузка...</p>
+        <p className="py-16 text-center text-sm text-gray-400">{t('common.loading')}</p>
       ) : visible.length === 0 ? (
         <div className="flex flex-col items-center rounded-xl border border-dashed border-gray-300 px-6 py-16 text-center">
           <ShoppingBag className="mb-3 size-10 text-gray-300" strokeWidth={1.5} />
-          <p className="text-gray-950">{orders.length === 0 ? 'Заказов пока нет' : 'Ничего не найдено'}</p>
+          <p className="text-gray-950">{orders.length === 0 ? t('orders.empty') : t('common.nothingFound')}</p>
           {orders.length === 0 && (
             <p className="mt-1 text-sm text-gray-500">
-              Когда покупатель нажмёт «Оформить заказ» в корзине, заказ появится здесь
+              {t('orders.emptyHint')}
             </p>
           )}
         </div>
@@ -314,11 +321,11 @@ function Orders() {
             <thead className="border-b border-gray-200 bg-gray-50 text-left text-xs font-medium text-gray-500">
               <tr>
                 <th className="px-4 py-3">№</th>
-                <th className="px-4 py-3">Дата</th>
-                <th className="px-4 py-3">Клиент</th>
-                <th className="px-4 py-3">Товары</th>
-                <th className="px-4 py-3 text-right">Сумма</th>
-                <th className="px-4 py-3">Статус</th>
+                <th className="px-4 py-3">{t('orders.colDate')}</th>
+                <th className="px-4 py-3">{t('orders.colClient')}</th>
+                <th className="px-4 py-3">{t('orders.colItems')}</th>
+                <th className="px-4 py-3 text-right">{t('orders.colTotal')}</th>
+                <th className="px-4 py-3">{t('orders.colStatus')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -336,7 +343,7 @@ function Orders() {
                   </td>
                   <td className="max-w-[220px] px-4 py-3 text-xs text-gray-500">
                     <p className="truncate">{o.items.map((i) => i.name).join(', ')}</p>
-                    <p>{itemCount(o)} шт.</p>
+                    <p>{t('common.pcs', { count: itemCount(o) })}</p>
                   </td>
                   <td className="px-4 py-3 text-right font-semibold whitespace-nowrap text-gray-950">
                     ${Number(o.total).toFixed(2)}
@@ -362,7 +369,7 @@ function Orders() {
                       #{o.id} · {o.customer_name}
                     </span>
                     <span className="block text-xs text-gray-500">
-                      {formatDateTime(o.created_at)} · {itemCount(o)} шт.
+                      {formatDateTime(o.created_at)} · {t('common.pcs', { count: itemCount(o) })}
                     </span>
                   </span>
                   <span className="flex shrink-0 flex-col items-end gap-1">

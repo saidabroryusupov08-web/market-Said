@@ -1,6 +1,8 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { ArrowLeft, KeyRound, Lock, MailCheck, ShieldAlert, ShieldCheck } from 'lucide-react'
+import { LanguageSwitcher } from '../../../shared/i18n'
 import { LogoMark } from '../../../shared/Logo'
+import { useT } from '../i18n'
 import { useAuth } from '../lib/auth'
 import { validatePassword } from '../lib/password'
 import PasswordInput from '../components/PasswordInput'
@@ -9,9 +11,19 @@ import { glassBadge, inputClass, labelClass, primaryBtn, secondaryBtn } from '..
 
 // Kirishga oid barcha ekranlar: login, parolni tiklash, 2FA kodi, yangi parol.
 
+// tarjimadagi {email} kabi joylarga element qo'yadi (qalin email, <code> va h.k.)
+function rich(text: string, parts: Record<string, ReactNode>) {
+  return text.split(/(\{\w+\})/).map((piece, i) => {
+    const key = piece.match(/^\{(\w+)\}$/)?.[1]
+    return <span key={i}>{key && key in parts ? parts[key] : piece}</span>
+  })
+}
+
 function Shell({ children }: { children: ReactNode }) {
+  const { t, lang, setLang } = useT()
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
+    <div className="relative flex min-h-screen items-center justify-center bg-gray-50 p-4">
+      <LanguageSwitcher lang={lang} setLang={setLang} label={t('common.language')} className="absolute top-4 right-4" />
       <div className="w-full max-w-sm">
         <div className="mb-6 flex flex-col items-center text-center">
           <LogoMark className="size-16" />
@@ -62,6 +74,7 @@ export function CodeInput({
   onChange: (value: string) => void
   autoFocus?: boolean
 }) {
+  const { t } = useT()
   return (
     <input
       inputMode="numeric"
@@ -69,7 +82,7 @@ export function CodeInput({
       autoFocus={autoFocus}
       maxLength={6}
       placeholder="000000"
-      aria-label="Код из приложения"
+      aria-label={t('login.codeLabel')}
       value={value}
       onChange={(e) => onChange(e.target.value.replace(/\D/g, '').slice(0, 6))}
       className={`${inputClass} h-12 text-center font-mono text-2xl tracking-[0.5em]`}
@@ -79,14 +92,18 @@ export function CodeInput({
 
 // Supabase kalitlari hali qo'yilmagan bo'lsa — nima qilish kerakligi ko'rsatiladi
 export function NotConfigured() {
+  const { t } = useT()
+  const code = (text: string) => <code className="rounded bg-gray-100 px-1">{text}</code>
   return (
     <Shell>
       <ShieldAlert className="mb-3 size-6 text-amber-500" />
-      <h1 className="text-base font-semibold text-gray-950">Supabase не настроен</h1>
+      <h1 className="text-base font-semibold text-gray-950">{t('auth.notConfigured')}</h1>
       <p className="mt-2 text-sm text-gray-600">
-        Добавьте переменные <code className="rounded bg-gray-100 px-1">VITE_SUPABASE_URL</code> и{' '}
-        <code className="rounded bg-gray-100 px-1">VITE_SUPABASE_ANON_KEY</code> в настройки Vercel
-        (или в файл <code className="rounded bg-gray-100 px-1">.env.local</code>) и перезапустите.
+        {rich(t('login.notConfiguredText'), {
+          url: code('VITE_SUPABASE_URL'),
+          key: code('VITE_SUPABASE_ANON_KEY'),
+          file: code('.env.local'),
+        })}
       </p>
     </Shell>
   )
@@ -94,15 +111,16 @@ export function NotConfigured() {
 
 export function NotAdmin({ email }: { email: string }) {
   const { signOut } = useAuth()
+  const { t } = useT()
   return (
     <Shell>
       <ShieldAlert className="mb-3 size-6 text-red-500" />
-      <h1 className="text-base font-semibold text-gray-950">Нет доступа</h1>
+      <h1 className="text-base font-semibold text-gray-950">{t('auth.noAccess')}</h1>
       <p className="mt-2 text-sm text-gray-600">
-        У аккаунта <b className="break-all">{email}</b> нет прав администратора.
+        {rich(t('login.notAdmin'), { email: <b className="break-all">{email}</b> })}
       </p>
       <button type="button" onClick={() => signOut()} className={`${secondaryBtn} mt-5 w-full`}>
-        Войти под другим аккаунтом
+        {t('login.otherAccount')}
       </button>
     </Shell>
   )
@@ -110,6 +128,7 @@ export function NotAdmin({ email }: { email: string }) {
 
 function ForgotPassword({ initialEmail, onBack }: { initialEmail: string; onBack: () => void }) {
   const { requestPasswordReset } = useAuth()
+  const { t } = useT()
   const [email, setEmail] = useState(initialEmail)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -117,7 +136,7 @@ function ForgotPassword({ initialEmail, onBack }: { initialEmail: string; onBack
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
-    if (!/^\S+@\S+\.\S+$/.test(email.trim())) return setError('Введите корректный email')
+    if (!/^\S+@\S+\.\S+$/.test(email.trim())) return setError(t('login.invalidEmail'))
     setBusy(true)
     const problem = await requestPasswordReset(email.trim())
     setBusy(false)
@@ -129,17 +148,16 @@ function ForgotPassword({ initialEmail, onBack }: { initialEmail: string; onBack
     <Shell>
       {sent ? (
         <>
-          <Heading Icon={MailCheck} title="Проверьте почту" text="Письмо может прийти через 1–2 минуты" />
+          <Heading Icon={MailCheck} title={t('login.checkMail')} text={t('login.checkMailHint')} />
           <p className="text-sm text-gray-600">
-            Если аккаунт <b className="break-all">{email.trim()}</b> существует, мы отправили на него
-            ссылку для смены пароля.
+            {rich(t('login.resetSent'), { email: <b className="break-all">{email.trim()}</b> })}
           </p>
         </>
       ) : (
         <form onSubmit={submit} noValidate>
-          <Heading Icon={KeyRound} title="Восстановление пароля" text="Пришлём ссылку на email" />
+          <Heading Icon={KeyRound} title={t('login.resetTitle')} text={t('login.resetHint')} />
           <label className={labelClass} htmlFor="reset-email">
-            Email администратора
+            {t('login.adminEmail')}
           </label>
           <input
             id="reset-email"
@@ -155,7 +173,7 @@ function ForgotPassword({ initialEmail, onBack }: { initialEmail: string; onBack
           />
           <ErrorText>{error}</ErrorText>
           <button type="submit" disabled={busy} className={`${primaryBtn} mt-5 w-full`}>
-            {busy ? 'Отправка...' : 'Отправить ссылку'}
+            {busy ? t('common.sending') : t('login.sendLink')}
           </button>
         </form>
       )}
@@ -165,7 +183,7 @@ function ForgotPassword({ initialEmail, onBack }: { initialEmail: string; onBack
         className="mt-4 inline-flex cursor-pointer items-center gap-1 text-xs text-gray-500 hover:text-gray-950"
       >
         <ArrowLeft className="size-3.5" />
-        Назад ко входу
+        {t('login.backToLogin')}
       </button>
     </Shell>
   )
@@ -173,6 +191,7 @@ function ForgotPassword({ initialEmail, onBack }: { initialEmail: string; onBack
 
 function Login({ notice }: { notice?: string }) {
   const { signIn } = useAuth()
+  const { t } = useT()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -184,7 +203,7 @@ function Login({ notice }: { notice?: string }) {
   const submit = async (e: FormEvent) => {
     e.preventDefault()
     if (busy) return
-    if (!email.trim() || !password) return setError('Введите email и пароль')
+    if (!email.trim() || !password) return setError(t('login.enterEmailPassword'))
     setBusy(true)
     const problem = await signIn(email.trim(), password)
     setBusy(false)
@@ -196,7 +215,7 @@ function Login({ notice }: { notice?: string }) {
 
   return (
     <Shell>
-      <Heading Icon={Lock} title="Вход в админ-панель" text="Только для администратора магазина" />
+      <Heading Icon={Lock} title={t('login.title')} text={t('login.subtitle')} />
 
       {notice && (
         <p className="mb-4 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">{notice}</p>
@@ -221,14 +240,14 @@ function Login({ notice }: { notice?: string }) {
 
         <div className="mb-1 flex items-center justify-between">
           <label className="text-xs font-medium text-gray-500" htmlFor="password">
-            Пароль
+            {t('login.password')}
           </label>
           <button
             type="button"
             onClick={() => setForgot(true)}
             className="cursor-pointer text-xs text-gray-500 hover:text-gray-950 hover:underline"
           >
-            Забыли пароль?
+            {t('login.forgot')}
           </button>
         </div>
         <PasswordInput
@@ -244,7 +263,7 @@ function Login({ notice }: { notice?: string }) {
         <ErrorText>{error}</ErrorText>
 
         <button type="submit" disabled={busy} className={`${primaryBtn} mt-5 w-full`}>
-          {busy ? 'Вход...' : 'Войти'}
+          {busy ? t('login.signingIn') : t('login.signIn')}
         </button>
       </form>
     </Shell>
@@ -253,13 +272,14 @@ function Login({ notice }: { notice?: string }) {
 
 export function MfaChallenge({ email }: { email: string }) {
   const { verifyMfa, signOut } = useAuth()
+  const { t } = useT()
   const [code, setCode] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
-    if (code.length !== 6) return setError('Введите 6 цифр из приложения')
+    if (code.length !== 6) return setError(t('login.enterCode'))
     setBusy(true)
     const problem = await verifyMfa(code)
     setBusy(false)
@@ -273,11 +293,11 @@ export function MfaChallenge({ email }: { email: string }) {
     <Shell>
       <Heading
         Icon={ShieldCheck}
-        title="Двухфакторная проверка"
-        text="Код из Google Authenticator (или аналога)"
+        title={t('login.mfaTitle')}
+        text={t('login.mfaHint')}
       />
       <p className="mb-4 text-xs text-gray-500">
-        Аккаунт: <b className="break-all text-gray-700">{email}</b>
+        {rich(t('login.account'), { email: <b className="break-all text-gray-700">{email}</b> })}
       </p>
       <form onSubmit={submit} noValidate>
         <CodeInput
@@ -290,7 +310,7 @@ export function MfaChallenge({ email }: { email: string }) {
         />
         <ErrorText>{error}</ErrorText>
         <button type="submit" disabled={busy} className={`${primaryBtn} mt-5 w-full`}>
-          {busy ? 'Проверка...' : 'Подтвердить'}
+          {busy ? t('common.checking') : t('common.confirm')}
         </button>
       </form>
       <button
@@ -299,7 +319,7 @@ export function MfaChallenge({ email }: { email: string }) {
         className="mt-4 inline-flex cursor-pointer items-center gap-1 text-xs text-gray-500 hover:text-gray-950"
       >
         <ArrowLeft className="size-3.5" />
-        Войти под другим аккаунтом
+        {t('login.otherAccount')}
       </button>
     </Shell>
   )
@@ -308,6 +328,7 @@ export function MfaChallenge({ email }: { email: string }) {
 // parolni tiklash xatidagi havola shu sahifani ochadi
 export function ResetPassword({ email }: { email: string }) {
   const { completeRecovery, signOut } = useAuth()
+  const { t } = useT()
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [error, setError] = useState('')
@@ -325,10 +346,10 @@ export function ResetPassword({ email }: { email: string }) {
 
   return (
     <Shell>
-      <Heading Icon={KeyRound} title="Новый пароль" text={email} />
+      <Heading Icon={KeyRound} title={t('login.newPassword')} text={email} />
       <form onSubmit={submit} noValidate>
         <label className={labelClass} htmlFor="new-password">
-          Новый пароль (минимум 8 символов, буквы и цифры)
+          {t('login.newPasswordRule')}
         </label>
         <PasswordInput
           id="new-password"
@@ -341,7 +362,7 @@ export function ResetPassword({ email }: { email: string }) {
           }}
         />
         <label className={`${labelClass} mt-3`} htmlFor="confirm-password">
-          Повторите пароль
+          {t('login.repeatPassword')}
         </label>
         <PasswordInput
           id="confirm-password"
@@ -354,7 +375,7 @@ export function ResetPassword({ email }: { email: string }) {
         />
         <ErrorText>{error}</ErrorText>
         <button type="submit" disabled={busy} className={`${primaryBtn} mt-5 w-full`}>
-          {busy ? 'Сохранение...' : 'Сохранить и войти'}
+          {busy ? t('common.saving') : t('login.saveAndEnter')}
         </button>
       </form>
       <button
@@ -366,7 +387,7 @@ export function ResetPassword({ email }: { email: string }) {
         className="mt-4 inline-flex cursor-pointer items-center gap-1 text-xs text-gray-500 hover:text-gray-950"
       >
         <ArrowLeft className="size-3.5" />
-        Отмена
+        {t('common.cancel')}
       </button>
     </Shell>
   )

@@ -1,5 +1,6 @@
 import { discountPercent, type Product } from '../../../data/products'
 import { getPrice, hasSizePriceRange, minPrice } from '../../../utils/price'
+import { useT } from '../../../i18n'
 
 // o'lcham tanlanmagan bo'lsa "от $..." ko'rinadi, tanlangach o'sha o'lcham narxi.
 // Chegirma bo'lsa yonida eski narx ustidan chizilgan holda turadi.
@@ -12,6 +13,7 @@ function ProductPrice({
   size: string
   className?: string
 }) {
+  const { t } = useT()
   // mahsulotda endi yo'q o'lcham tanlangan bo'lib qolsa, tanlanmagan deb hisoblanadi
   if (!product.sizes.includes(size)) size = ''
   const showFrom = !size && hasSizePriceRange(product)
@@ -22,7 +24,7 @@ function ProductPrice({
 
   return (
     <p className={className}>
-      {showFrom && <span className="mr-1 text-base font-normal text-gray-500">от</span>}
+      {showFrom && <span className="mr-1 text-base font-normal text-gray-500">{t('common.from')}</span>}
       <span className={discount > 0 ? 'text-red-600' : undefined}>${price.toFixed(2)}</span>
       {discount > 0 && (
         <span className="ml-2 text-base font-normal text-gray-400 line-through">

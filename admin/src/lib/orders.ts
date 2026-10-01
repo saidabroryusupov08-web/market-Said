@@ -2,12 +2,13 @@
 
 export type OrderStatus = 'new' | 'processing' | 'shipped' | 'delivered' | 'cancelled'
 
-export const ORDER_STATUSES: { value: OrderStatus; label: string; className: string }[] = [
-  { value: 'new', label: 'Новый', className: 'bg-rose-50 text-rose-600 ring-rose-200' },
-  { value: 'processing', label: 'В работе', className: 'bg-amber-50 text-amber-700 ring-amber-200' },
-  { value: 'shipped', label: 'Отправлен', className: 'bg-violet-50 text-violet-700 ring-violet-200' },
-  { value: 'delivered', label: 'Доставлен', className: 'bg-green-50 text-green-700 ring-green-200' },
-  { value: 'cancelled', label: 'Отменён', className: 'bg-gray-100 text-gray-500 ring-gray-200' },
+// nomi tarjimada: t(`status.${value}`)
+export const ORDER_STATUSES: { value: OrderStatus; className: string }[] = [
+  { value: 'new', className: 'bg-rose-50 text-rose-600 ring-rose-200' },
+  { value: 'processing', className: 'bg-amber-50 text-amber-700 ring-amber-200' },
+  { value: 'shipped', className: 'bg-violet-50 text-violet-700 ring-violet-200' },
+  { value: 'delivered', className: 'bg-green-50 text-green-700 ring-green-200' },
+  { value: 'cancelled', className: 'bg-gray-100 text-gray-500 ring-gray-200' },
 ]
 
 export type Order = {

@@ -7,6 +7,8 @@ import { useSearch } from '../../context/SearchContext'
 import { useWishlist } from '../../context/WishlistContext'
 import type { NavTag } from '../../data/products'
 import Logo from '../../../shared/Logo'
+import { LanguageSwitcher } from '../../../shared/i18n'
+import { useT } from '../../i18n'
 import CartDrawer from './CartDrawer'
 import WishlistDrawer from './WishlistDrawer'
 
@@ -31,13 +33,13 @@ function CountBadge({ count }: { count: number }) {
   )
 }
 
-const navLinks: { label: string; tag: NavTag }[] = [
-  { label: 'Новинки', tag: 'new' },
-  { label: 'Мужчинам', tag: 'men' },
-  { label: 'Женщинам', tag: 'women' },
-  { label: 'Детям', tag: 'kids' },
-  { label: 'Скидки', tag: 'sale' },
-]
+const navLinks = [
+  { label: 'nav.new', tag: 'new' },
+  { label: 'nav.men', tag: 'men' },
+  { label: 'nav.women', tag: 'women' },
+  { label: 'nav.kids', tag: 'kids' },
+  { label: 'nav.sale', tag: 'sale' },
+] as const satisfies readonly { label: string; tag: NavTag }[]
 
 function scrollToProducts() {
   document.getElementById('products')?.scrollIntoView({ behavior: 'smooth' })
@@ -47,6 +49,7 @@ function SearchInput({ onSubmit }: { onSubmit?: () => void }) {
   const { query, setQuery, history, addToHistory, removeFromHistory, clearHistory } =
     useSearch()
   const [focused, setFocused] = useState(false)
+  const { t } = useT()
 
   const search = (term: string) => {
     setQuery(term)
@@ -81,15 +84,15 @@ function SearchInput({ onSubmit }: { onSubmit?: () => void }) {
           if (showHistory) setFocused(false)
           else setQuery('')
         }}
-        placeholder="Поиск товаров..."
-        aria-label="Поиск товаров"
+        placeholder={t('search.placeholder')}
+        aria-label={t('search.label')}
         autoComplete="off"
         className="h-[37px] w-full rounded-lg border border-transparent bg-gray-100 pr-9 pl-10 text-sm outline-none transition focus:border-blue-500 focus:bg-white focus:shadow-[0_0_0_4px_rgba(59,130,246,0.25)]"
       />
       {query && (
         <button
           type="button"
-          aria-label="Очистить поиск"
+          aria-label={t('search.clear')}
           onClick={() => setQuery('')}
           className="absolute top-1/2 right-2 -translate-y-1/2 cursor-pointer rounded-full p-1 text-gray-400 transition hover:bg-gray-200 hover:text-gray-700"
         >
@@ -104,13 +107,13 @@ function SearchInput({ onSubmit }: { onSubmit?: () => void }) {
           className="absolute top-full right-0 left-0 z-50 mt-1.5 animate-[fade-in_100ms_ease-out] rounded-lg border border-gray-200 bg-white p-1 shadow-lg"
         >
           <div className="flex items-center justify-between px-2.5 pt-1.5 pb-1">
-            <span className="text-xs font-semibold text-gray-500">Недавние запросы</span>
+            <span className="text-xs font-semibold text-gray-500">{t('search.recent')}</span>
             <button
               type="button"
               onClick={clearHistory}
               className="cursor-pointer text-xs text-gray-500 transition hover:text-gray-950"
             >
-              Очистить всё
+              {t('search.clearAll')}
             </button>
           </div>
           <ul>
@@ -126,7 +129,7 @@ function SearchInput({ onSubmit }: { onSubmit?: () => void }) {
                 </button>
                 <button
                   type="button"
-                  aria-label={`Удалить ${term}`}
+                  aria-label={t('search.remove', { term })}
                   onClick={() => removeFromHistory(term)}
                   className="mr-1 cursor-pointer rounded-full p-1 text-gray-400 transition hover:bg-gray-200 hover:text-gray-700"
                 >
@@ -146,6 +149,7 @@ function Header() {
   const { count, openCart } = useCart()
   const { count: likedCount, lastLikedAt, openWishlist } = useWishlist()
   const { setActiveTag } = useCatalogFilter()
+  const { t, lang, setLang } = useT()
 
   const goToTag = (tag: NavTag) => {
     setActiveTag(tag)
@@ -161,17 +165,17 @@ function Header() {
         <div className="flex items-center gap-2 lg:gap-0">
           <button
             type="button"
-            aria-label="Меню"
+            aria-label={t('nav.menu')}
             className={`${iconBtn} -ml-2 lg:hidden`}
             onClick={() => setMenuOpen((open) => !open)}
           >
             {menuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
           </button>
-          <a href="#" aria-label="cX-shop — на главную" className="shrink-0 lg:mr-10">
+          <a href="#" aria-label={t('nav.home')} className="shrink-0 lg:mr-6 xl:mr-10">
             <Logo compact />
           </a>
 
-          <ul className="hidden items-center gap-8 lg:flex">
+          <ul className="hidden items-center gap-5 lg:flex xl:gap-8">
             {navLinks.map((link) => (
               <li key={link.label}>
                 <a
@@ -182,28 +186,30 @@ function Header() {
                   }}
                   className="whitespace-nowrap text-gray-900 transition hover:text-gray-500"
                 >
-                  {link.label}
+                  {t(link.label)}
                 </a>
               </li>
             ))}
           </ul>
         </div>
 
-        <div className="hidden max-w-[364px] flex-1 md:block">
+        <div className="hidden max-w-[364px] min-w-[170px] flex-1 md:block">
           <SearchInput />
         </div>
 
         <div className="flex items-center gap-2 sm:gap-4">
-          <IconTooltip label="Аккаунт">
-            <Link to="/" aria-label="Аккаунт" className={iconBtn}>
+          <LanguageSwitcher lang={lang} setLang={setLang} label={t('common.language')} />
+
+          <IconTooltip label={t('nav.account')}>
+            <Link to="/" aria-label={t('nav.account')} className={iconBtn}>
               <User className="size-5" />
             </Link>
           </IconTooltip>
 
-          <IconTooltip label={`Избранное (${likedCount})`}>
+          <IconTooltip label={t('nav.wishlist', { count: likedCount })}>
             <button
               type="button"
-              aria-label={`Избранное (${likedCount})`}
+              aria-label={t('nav.wishlist', { count: likedCount })}
               className={`${iconBtn} relative`}
               onClick={openWishlist}
             >
@@ -225,10 +231,10 @@ function Header() {
             </button>
           </IconTooltip>
 
-          <IconTooltip label="Корзина">
+          <IconTooltip label={t('nav.cart')}>
             <button
               type="button"
-              aria-label="Корзина"
+              aria-label={t('nav.cart')}
               className={`${iconBtn} relative`}
               onClick={openCart}
             >
@@ -261,7 +267,7 @@ function Header() {
                       setMenuOpen(false)
                     }}
                   >
-                    {link.label}
+                    {t(link.label)}
                   </a>
                 </li>
               ))}

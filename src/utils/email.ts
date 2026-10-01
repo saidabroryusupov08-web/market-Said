@@ -45,22 +45,24 @@ const DOMAIN_TYPOS: Record<string, string> = {
 }
 
 // xato bo'lsa foydalanuvchiga ko'rsatiladigan matn, to'g'ri bo'lsa null
+import { tr } from '../i18n'
+
 export function validateEmail(raw: string): string | null {
   const email = raw.trim().toLowerCase()
-  if (!email) return 'Введите email'
-  if (/\s/.test(email)) return 'Email не должен содержать пробелов'
-  if (!email.includes('@')) return 'В email должен быть символ «@»'
-  if (email.includes('..')) return 'Email не может содержать две точки подряд'
-  if (email.length > 254) return 'Email слишком длинный'
+  if (!email) return tr('email.empty')
+  if (/\s/.test(email)) return tr('email.spaces')
+  if (!email.includes('@')) return tr('email.noAt')
+  if (email.includes('..')) return tr('email.doubleDot')
+  if (email.length > 254) return tr('email.tooLong')
 
   const [local, domain] = email.split('@')
   if (!EMAIL_RE.test(email) || local.length > 64)
-    return 'Некорректный email. Пример: name@gmail.com'
+    return tr('email.invalid')
 
   const suggestion = DOMAIN_TYPOS[domain]
-  if (suggestion) return `Возможно, вы имели в виду ${local}@${suggestion}?`
+  if (suggestion) return tr('email.didYouMean', { email: `${local}@${suggestion}` })
 
-  if (FAKE_DOMAINS.has(domain)) return 'Укажите ваш настоящий email'
+  if (FAKE_DOMAINS.has(domain)) return tr('email.fake')
 
   return null
 }

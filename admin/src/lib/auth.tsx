@@ -9,6 +9,7 @@ import {
 } from 'react'
 import { createClient, type AuthError, type Session } from '@supabase/supabase-js'
 import { supabase, supabaseAnonKey, supabaseUrl } from '../../../shared/supabase'
+import { tr } from '../i18n'
 
 // Kirish Supabase Auth orqali (email + parol, ixtiyoriy 2FA). Kirgan odam admin ekani bazadagi
 // public.is_admin() bilan tekshiriladi — admins jadvalida bo'lmasa (yoki 2FA yoqilgan-u kod
@@ -87,10 +88,10 @@ function writeLastActivity(time: number) {
 function describe(error: AuthError | null, fallback: string): string | null {
   if (!error) return null
   console.error(error)
-  if (error.status === 429) return 'Слишком много попыток. Подождите немного и попробуйте снова.'
-  if (error.code === 'same_password') return 'Новый пароль должен отличаться от текущего'
-  if (error.code === 'weak_password') return 'Пароль слишком простой'
-  if (/fetch|network/i.test(error.message)) return 'Нет связи с сервером. Проверьте интернет.'
+  if (error.status === 429) return tr('auth.tooManyAttempts')
+  if (error.code === 'same_password') return tr('auth.samePassword')
+  if (error.code === 'weak_password') return tr('auth.weakPassword')
+  if (/fetch|network/i.test(error.message)) return tr('error.network')
   return fallback
 }
 
@@ -148,7 +149,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // sahifa uzoq yopiq turib qayta ochilsa ham harakatsizlik muddati hisobga olinadi
     const last = readLastActivity()
     if (last && Date.now() - last > IDLE_LIMIT_MS && !location.pathname.startsWith(RESET_PATH)) {
-      noticeRef.current = 'Сессия завершена из-за бездействия. Войдите снова.'
+      noticeRef.current = tr('auth.sessionExpired')
       supabase.auth.signOut({ scope: 'local' }).then(apply)
     } else {
       apply()
@@ -198,7 +199,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // boshqa tabdagi harakat ham hisobga olinadi
       const latest = Math.max(last, readLastActivity())
       if (Date.now() - latest > IDLE_LIMIT_MS)
-        signOut('Сессия завершена из-за бездействия. Войдите снова.')
+        signOut(tr('auth.sessionExpired'))
     }, 30_000)
     return () => {
       events.forEach((e) => window.removeEventListener(e, onActivity))
@@ -208,24 +209,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // ----- kirish -----
   const signIn = async (email: string, password: string) => {
-    if (!supabase) return 'Supabase не настроен'
+    if (!supabase) return tr('auth.notConfigured')
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (!error) {
       writeLastActivity(Date.now())
       lastVerifiedRef.current = 0
       return null
     }
-    if (error.status === 400) return 'Неверный email или пароль'
-    return describe(error, 'Не удалось войти. Проверьте интернет и попробуйте ещё раз.')
+    if (error.status === 400) return tr('auth.wrongCredentials')
+    return describe(error, tr('auth.loginFailed'))
   }
 
   const verifyMfa = async (code: string) => {
     const db = supabase!
     const { data } = await db.auth.mfa.listFactors()
     const factor = data?.totp.find((f) => f.status === 'verified')
-    if (!factor) return 'Двухфакторная защита не найдена'
+    if (!factor) return tr('auth.mfaNotFound')
     const { error } = await db.auth.mfa.challengeAndVerify({ factorId: factor.id, code })
-    if (error) return error.status === 429 ? describe(error, '') : 'Неверный код. Попробуйте ещё раз.'
+    if (error) return error.status === 429 ? describe(error, '') : tr('auth.wrongCode')
     await refresh()
     return null
   }
@@ -243,7 +244,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const completeRecovery = async (password: string) => {
     const { error } = await supabase!.auth.updateUser({ password })
-    if (error) return describe(error, 'Не удалось сохранить пароль. Ссылка могла устареть.')
+    if (error) return describe(error, tr('auth.recoveryFailed'))
     history.replaceState(null, '', '/')
     await refresh()
     return null
@@ -253,7 +254,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Parol alohida, vaqtinchalik ulanish orqali tekshiriladi: asosiy sessiya (va uning 2FA
   // darajasi) o'zgarmaydi. To'g'ri kiritilsa, keyingi REAUTH_GRACE_MS davomida qayta so'ralmaydi.
   const verifyPassword = async (password: string) => {
-    if (state.status !== 'admin') return 'Нет доступа'
+    if (state.status !== 'admin') return tr('auth.noAccess')
     const verifier = createClient(supabaseUrl!, supabaseAnonKey!, {
       auth: { persistSession: false, autoRefreshToken: false, storageKey: 'cx-admin-verify' },
     })
@@ -261,7 +262,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email: state.session.user.email ?? '',
       password,
     })
-    if (error) return error.status === 400 ? 'Неверный пароль' : describe(error, 'Ошибка проверки')
+    if (error) return error.status === 400 ? tr('auth.wrongPassword') : describe(error, tr('auth.verifyFailed'))
     await verifier.auth.signOut({ scope: 'local' })
     lastVerifiedRef.current = Date.now()
     return null
@@ -271,9 +272,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ----- parolni almashtirish (panel ichidan) -----
   const changePassword = async (current: string, next: string) => {
     const wrong = await verifyPassword(current)
-    if (wrong) return wrong === 'Неверный пароль' ? 'Текущий пароль указан неверно' : wrong
+    if (wrong) return wrong === tr('auth.wrongPassword') ? tr('auth.wrongCurrentPassword') : wrong
     const { error } = await supabase!.auth.updateUser({ password: next })
-    return describe(error, 'Не удалось изменить пароль')
+    return describe(error, tr('auth.changeFailed'))
   }
 
   // ----- profil: ism va rasm (Supabase foydalanuvchi ma'lumotida saqlanadi) -----
@@ -281,7 +282,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { error } = await supabase!.auth.updateUser({
       data: { full_name: profile.name.trim() || null, avatar_url: profile.avatarUrl },
     })
-    if (error) return describe(error, 'Не удалось сохранить профиль')
+    if (error) return describe(error, tr('auth.profileFailed'))
     await refresh()
     return null
   }
@@ -298,7 +299,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       factorType: 'totp',
       friendlyName: `cX-shop admin ${new Date().toLocaleDateString('ru-RU')}`,
     })
-    if (error || !data) return { error: describe(error, 'Не удалось включить 2FA') ?? 'Ошибка' }
+    if (error || !data) return { error: describe(error, tr('auth.mfaEnableFailed')) ?? tr('error.unknown') }
     // supabase-js SVG'ni kodlamasdan data-URL'ga qo'yadi; SVG ichidagi '#' (rang) manzilni
     // kesib yuboradi va rasm ochilmaydi — shuning uchun qayta kodlanadi
     const svg = data.totp.qr_code.replace(/^data:image\/svg\+xml;utf-8,/, '')
@@ -310,7 +311,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const confirmTotpEnrollment = async (factorId: string, code: string) => {
     const { error } = await supabase!.auth.mfa.challengeAndVerify({ factorId, code })
-    if (error) return 'Неверный код. Проверьте время на телефоне и попробуйте ещё раз.'
+    if (error) return tr('auth.wrongCodeTime')
     await refresh()
     return null
   }
@@ -320,7 +321,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data } = await db.auth.mfa.listFactors()
     for (const f of data?.all ?? []) {
       const { error } = await db.auth.mfa.unenroll({ factorId: f.id })
-      if (error) return describe(error, 'Не удалось отключить 2FA')
+      if (error) return describe(error, tr('auth.mfaDisableFailed'))
     }
     // sessiya darajasi yangilanishi uchun
     await db.auth.refreshSession()

@@ -4,6 +4,8 @@ import type { Product } from '../../../data/products'
 import ProductImage from './ProductImage'
 import ProductOptions from './ProductOptions'
 import ProductPrice from './ProductPrice'
+import { categoryLabel } from '../../../../shared/dataLabels'
+import { useT } from '../../../i18n'
 
 type QuickViewModalProps = {
   product: Product | null
@@ -30,6 +32,7 @@ function QuickViewModal({ product, onClose }: QuickViewModalProps) {
 
 function QuickViewContent({ product, onClose }: { product: Product; onClose: () => void }) {
   const [size, setSize] = useState('')
+  const { t, lang } = useT()
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -44,7 +47,7 @@ function QuickViewContent({ product, onClose }: { product: Product; onClose: () 
       >
         <button
           type="button"
-          aria-label="Закрыть"
+          aria-label={t('common.close')}
           onClick={onClose}
           className="absolute top-3 right-3 z-10 rounded-md bg-white/80 p-1.5 text-gray-700 transition hover:bg-gray-100 hover:text-black"
         >
@@ -57,7 +60,7 @@ function QuickViewContent({ product, onClose }: { product: Product; onClose: () 
 
         <div className="flex flex-col p-6">
           <span className="w-fit rounded-md border border-gray-200 px-2 py-0.5 text-xs font-semibold text-gray-950">
-            {product.category}
+            {categoryLabel(lang, product.category)}
           </span>
           <h2 className="mt-3 text-2xl text-gray-950">{product.name}</h2>
           <ProductPrice

@@ -3,6 +3,8 @@ import { Minus, Plus, ShoppingBag, Trash2, X } from 'lucide-react'
 import { useCart } from '../../context/CartContext'
 import ProductImage from '../sections/Products/ProductImage'
 import CheckoutModal from './CheckoutModal'
+import { colorLabel, sizeLabel } from '../../../shared/dataLabels'
+import { useT } from '../../i18n'
 
 function CartDrawer() {
   const {
@@ -15,6 +17,7 @@ function CartDrawer() {
     removeItem,
   } = useCart()
   const [checkoutOpen, setCheckoutOpen] = useState(false)
+  const { t, lang } = useT()
 
   useEffect(() => {
     if (!open) return
@@ -44,7 +47,7 @@ function CartDrawer() {
 
       <aside
         role="dialog"
-        aria-label="Корзина покупок"
+        aria-label={t('cart.title')}
         className={`absolute top-0 right-0 flex h-full w-full max-w-md flex-col bg-white shadow-2xl transition-transform duration-500 ease-in-out ${
           open ? 'translate-x-0' : 'translate-x-full'
         }`}
@@ -52,11 +55,11 @@ function CartDrawer() {
         <div className="flex items-center justify-between p-6">
           <h2 className="flex items-center gap-2 text-xl font-medium text-black">
             <ShoppingBag className="size-5" />
-            Корзина покупок ({count})
+            {t('cart.titleCount', { count })}
           </h2>
           <button
             type="button"
-            aria-label="Закрыть"
+            aria-label={t('common.close')}
             className="rounded-md p-1 text-gray-700 transition hover:bg-gray-100 hover:text-black"
             onClick={onClose}
           >
@@ -67,14 +70,14 @@ function CartDrawer() {
         {items.length === 0 ? (
           <div className="flex flex-1 flex-col items-center justify-center px-6 pb-24 text-center">
             <ShoppingBag className="mb-4 size-16 text-gray-500" strokeWidth={1.75} />
-            <p className="text-lg text-black">Ваша корзина пуста</p>
-            <p className="mt-1 text-gray-500">Добавьте товары, чтобы начать покупки</p>
+            <p className="text-lg text-black">{t('cart.empty')}</p>
+            <p className="mt-1 text-gray-500">{t('cart.emptyHint')}</p>
             <button
               type="button"
               className="mt-6 rounded-md bg-gray-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-gray-800"
               onClick={onClose}
             >
-              Продолжить покупки
+              {t('common.continueShopping')}
             </button>
           </div>
         ) : (
@@ -90,7 +93,7 @@ function CartDrawer() {
                       <p className="font-medium text-gray-950">{item.product.name}</p>
                       <button
                         type="button"
-                        aria-label="Удалить"
+                        aria-label={t('common.delete')}
                         onClick={() => removeItem(item.key)}
                         className="text-gray-400 transition hover:text-red-500"
                       >
@@ -98,13 +101,13 @@ function CartDrawer() {
                       </button>
                     </div>
                     <p className="text-sm text-gray-500">
-                      {item.size} · {item.color}
+                      {sizeLabel(lang, item.size)} · {colorLabel(lang, item.color)}
                     </p>
                     <div className="mt-auto flex items-center justify-between">
                       <div className="flex items-center rounded-md border border-gray-200">
                         <button
                           type="button"
-                          aria-label="Уменьшить"
+                          aria-label={t('cart.decrease')}
                           onClick={() => updateQuantity(item.key, item.quantity - 1)}
                           className="p-1.5 transition hover:bg-gray-100"
                         >
@@ -113,7 +116,7 @@ function CartDrawer() {
                         <span className="w-8 text-center text-sm">{item.quantity}</span>
                         <button
                           type="button"
-                          aria-label="Увеличить"
+                          aria-label={t('cart.increase')}
                           onClick={() => updateQuantity(item.key, item.quantity + 1)}
                           className="p-1.5 transition hover:bg-gray-100"
                         >
@@ -131,7 +134,7 @@ function CartDrawer() {
 
             <div className="border-t border-gray-200 p-6">
               <div className="mb-4 flex justify-between text-lg font-medium text-gray-950">
-                <span>Итого</span>
+                <span>{t('common.total')}</span>
                 <span>${total.toFixed(2)}</span>
               </div>
               <button
@@ -143,7 +146,7 @@ function CartDrawer() {
                 }}
                 className="w-full cursor-pointer rounded-md bg-gray-950 py-2.5 font-semibold text-white transition hover:bg-gray-800"
               >
-                Оформить заказ
+                {t('cart.checkout')}
               </button>
             </div>
           </>

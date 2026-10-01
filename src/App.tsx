@@ -7,9 +7,11 @@ import { CatalogFilterProvider } from './context/CatalogFilterContext'
 import { ProductsProvider } from './context/ProductsContext'
 import { SearchProvider } from './context/SearchContext'
 import { WishlistProvider } from './context/WishlistContext'
+import { I18nProvider } from './i18n'
 
 function App() {
   return (
+    <I18nProvider>
     <ProductsProvider>
       <CartProvider>
         <WishlistProvider>
@@ -34,6 +36,7 @@ function App() {
         </WishlistProvider>
       </CartProvider>
     </ProductsProvider>
+    </I18nProvider>
   )
 }
 

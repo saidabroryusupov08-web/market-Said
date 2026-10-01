@@ -2,7 +2,9 @@ import { useCallback, useMemo, useState } from 'react'
 import { SearchX, X } from 'lucide-react'
 import { useCatalogFilter } from '../../../context/CatalogFilterContext'
 import { useSearch } from '../../../context/SearchContext'
-import { categories, NAV_TAGS, type Product } from '../../../data/products'
+import { categories, type Product } from '../../../data/products'
+import { categoryLabel, tagLabel } from '../../../../shared/dataLabels'
+import { useT } from '../../../i18n'
 import { useProducts } from '../../../context/ProductsContext'
 import { minPrice } from '../../../utils/price'
 import { createMatcher } from '../../../../shared/search'
@@ -10,16 +12,12 @@ import Select from '../../ui/Select'
 import ProductCard from './ProductCard'
 import QuickViewModal from './QuickViewModal'
 
-const tagLabels: Record<string, string> = Object.fromEntries(
-  NAV_TAGS.map((tag) => [tag.value, tag.label]),
-)
-
 const sortOptions = [
-  { value: 'newest', label: 'Сначала новые' },
-  { value: 'name', label: 'По названию' },
-  { value: 'price-asc', label: 'Цена: по возрастанию' },
-  { value: 'price-desc', label: 'Цена: по убыванию' },
-]
+  { value: 'newest', label: 'products.sortNewest' },
+  { value: 'name', label: 'products.sortName' },
+  { value: 'price-asc', label: 'products.sortPriceAsc' },
+  { value: 'price-desc', label: 'products.sortPriceDesc' },
+] as const
 
 function Products() {
   const [category, setCategory] = useState('Все')
@@ -31,6 +29,7 @@ function Products() {
   const { products, loaded } = useProducts()
   const { activeTag, setActiveTag } = useCatalogFilter()
   const search = query.trim().toLowerCase()
+  const { t, lang } = useT()
 
   const visibleProducts = useMemo(() => {
     // inglizcha/o'zbekcha/lotincha yozilsa ham ruscha nomlar topiladi (shared/search.ts)
@@ -59,16 +58,16 @@ function Products() {
       <div className="mx-auto w-[90%] lg:w-[70%]">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h2 className="text-2xl font-medium text-gray-950">Наши товары</h2>
+            <h2 className="text-2xl font-medium text-gray-950">{t('products.title')}</h2>
             <p className="mt-2 text-gray-500">
-              Откройте для себя всю коллекцию premium-одежды
+              {t('products.subtitle')}
             </p>
           </div>
           <Select
-            ariaLabel="Сортировка"
+            ariaLabel={t('products.sort')}
             value={sort}
             onChange={setSort}
-            options={sortOptions}
+            options={sortOptions.map((o) => ({ value: o.value, label: t(o.label) }))}
             className="w-full sm:w-56"
           />
         </div>
@@ -85,19 +84,19 @@ function Products() {
                   : 'bg-gray-100 text-gray-950 hover:bg-gray-200'
               }`}
             >
-              {item}
+              {categoryLabel(lang, item)}
             </button>
           ))}
         </div>
 
         {activeTag && (
           <div className="mt-4 flex items-center gap-2">
-            <span className="text-sm text-gray-500">Фильтр:</span>
+            <span className="text-sm text-gray-500">{t('products.filter')}</span>
             <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-950 py-1 pr-1.5 pl-3 text-xs font-semibold text-white">
-              {tagLabels[activeTag] ?? activeTag}
+              {tagLabel(lang, activeTag)}
               <button
                 type="button"
-                aria-label="Сбросить фильтр"
+                aria-label={t('products.resetFilter')}
                 onClick={() => setActiveTag(null)}
                 className="rounded-full p-0.5 transition hover:bg-white/20"
               >
@@ -109,21 +108,21 @@ function Products() {
 
         {search && (
           <p className="mt-6 text-sm text-gray-500">
-            Найдено: {visibleProducts.length} для{' '}
+            {t('products.found', { count: visibleProducts.length })}{' '}
             <span className="font-semibold text-gray-950">"{query.trim()}"</span>
-            {category !== 'Все' && <> в категории «{category}»</>}
+            {category !== 'Все' && t('products.inCategory', { category: categoryLabel(lang, category) })}
             <button
               type="button"
               onClick={() => setQuery('')}
               className="ml-3 cursor-pointer font-semibold text-gray-950 underline-offset-2 hover:underline"
             >
-              Очистить поиск
+              {t('search.clear')}
             </button>
           </p>
         )}
 
         {!loaded ? (
-          <p className="mt-8 py-16 text-center text-gray-400">Загрузка товаров...</p>
+          <p className="mt-8 py-16 text-center text-gray-400">{t('products.loading')}</p>
         ) : visibleProducts.length > 0 ? (
           <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {visibleProducts.map((product) => (
@@ -137,8 +136,8 @@ function Products() {
         ) : (
           <div className="mt-8 flex flex-col items-center rounded-xl border border-dashed border-gray-300 px-6 py-16 text-center">
             <SearchX className="mb-4 size-12 text-gray-400" strokeWidth={1.5} />
-            <p className="text-lg text-gray-950">Товары не найдены</p>
-            <p className="mt-1 text-gray-500">Попробуйте другое слово или категорию</p>
+            <p className="text-lg text-gray-950">{t('products.notFound')}</p>
+            <p className="mt-1 text-gray-500">{t('products.notFoundHint')}</p>
             <button
               type="button"
               onClick={() => {
@@ -148,7 +147,7 @@ function Products() {
               }}
               className="mt-6 cursor-pointer rounded-md bg-gray-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-gray-800"
             >
-              Показать все товары
+              {t('products.showAll')}
             </button>
           </div>
         )}

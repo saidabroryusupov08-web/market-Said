@@ -13,7 +13,9 @@ import {
   ShieldCheck,
   X,
 } from 'lucide-react'
+import { LanguageSwitcher } from '../../../shared/i18n'
 import Logo from '../../../shared/Logo'
+import { useT } from '../i18n'
 import { profileOf, useAuth } from '../lib/auth'
 import { useAdminData } from '../lib/data'
 import Avatar from './Avatar'
@@ -35,13 +37,14 @@ function Sidebar({
   const email = state.status === 'admin' ? (state.session.user.email ?? '') : ''
   const profile = state.status === 'admin' ? profileOf(state.session) : null
   const mfaEnabled = state.status === 'admin' && state.mfaEnabled
+  const { t } = useT()
 
   const links = [
-    { to: '/', label: 'Главная', Icon: LayoutDashboard, badge: null },
-    { to: '/orders', label: 'Заказы', Icon: ShoppingBag, badge: newOrders || null, highlight: true },
-    { to: '/products', label: 'Товары', Icon: Package, badge: products.length || null },
-    { to: '/messages', label: 'Сообщения', Icon: Inbox, badge: unread || null, highlight: true },
-    { to: '/analytics', label: 'Аналитика', Icon: BarChart3, badge: null },
+    { to: '/', label: t('nav.dashboard'), Icon: LayoutDashboard, badge: null },
+    { to: '/orders', label: t('nav.orders'), Icon: ShoppingBag, badge: newOrders || null, highlight: true },
+    { to: '/products', label: t('nav.products'), Icon: Package, badge: products.length || null },
+    { to: '/messages', label: t('nav.messages'), Icon: Inbox, badge: unread || null, highlight: true },
+    { to: '/analytics', label: t('nav.analytics'), Icon: BarChart3, badge: null },
   ]
 
   return (
@@ -96,7 +99,7 @@ function Sidebar({
 
         <OpenStoreButton className="mt-4 flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-left text-sm text-gray-500 transition hover:bg-gray-100 hover:text-gray-950">
           <ExternalLink className="size-4" />
-          Открыть магазин
+          {t('nav.openStore')}
         </OpenStoreButton>
       </nav>
 
@@ -109,7 +112,7 @@ function Sidebar({
               onNavigate?.()
               onOpenSecurity()
             }}
-            title="Профиль и безопасность: фото, имя, пароль, 2FA"
+            title={t('nav.profileTitle')}
             className="flex min-w-0 flex-1 cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition hover:bg-gray-100"
           >
             <Avatar src={profile?.avatarUrl ?? null} name={profile?.displayName ?? email} />
@@ -119,15 +122,15 @@ function Sidebar({
               </span>
               <span className="flex items-center gap-1 text-[11px] text-gray-400">
                 <ShieldCheck className={`size-3 ${mfaEnabled ? 'text-green-600' : ''}`} />
-                {mfaEnabled ? '2FA включена' : 'Безопасность'}
+                {mfaEnabled ? t('nav.mfaOn') : t('nav.security')}
               </span>
             </span>
           </button>
           <button
             type="button"
             onClick={() => signOut()}
-            aria-label="Выйти"
-            title="Выйти"
+            aria-label={t('nav.signOut')}
+            title={t('nav.signOut')}
             className={iconBtn}
           >
             <LogOut className="size-4" />
@@ -138,13 +141,13 @@ function Sidebar({
   )
 }
 
-const titles: Record<string, string> = {
-  '/': 'Главная',
-  '/orders': 'Заказы',
-  '/products': 'Товары',
-  '/messages': 'Сообщения',
-  '/analytics': 'Аналитика',
-}
+const titles = {
+  '/': 'nav.dashboard',
+  '/orders': 'nav.orders',
+  '/products': 'nav.products',
+  '/messages': 'nav.messages',
+  '/analytics': 'nav.analytics',
+} as const
 
 function Layout({ children }: { children: ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false)
@@ -152,6 +155,8 @@ function Layout({ children }: { children: ReactNode }) {
   const { pathname } = useLocation()
   const { reload, loadError } = useAdminData()
   const [reloading, setReloading] = useState(false)
+  const { t, lang, setLang } = useT()
+  const titleKey = titles[pathname as keyof typeof titles]
 
   const refresh = async () => {
     setReloading(true)
@@ -173,7 +178,7 @@ function Layout({ children }: { children: ReactNode }) {
           <aside className="absolute inset-y-0 left-0 w-64 animate-[fade-in_150ms_ease-out] bg-white shadow-xl">
             <button
               type="button"
-              aria-label="Закрыть меню"
+              aria-label={t('nav.closeMenu')}
               onClick={() => setMenuOpen(false)}
               className={`${iconBtn} absolute top-4 right-3`}
             >
@@ -190,14 +195,14 @@ function Layout({ children }: { children: ReactNode }) {
       <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-gray-200 bg-white/90 px-4 backdrop-blur sm:px-6">
         <button
           type="button"
-          aria-label="Меню"
+          aria-label={t('nav.menu')}
           onClick={() => setMenuOpen(true)}
           className={`${iconBtn} lg:hidden`}
         >
           <Menu className="size-5" />
         </button>
         <h1 className="hidden shrink-0 text-lg font-semibold text-gray-950 md:block md:w-40">
-          {titles[pathname] ?? ''}
+          {titleKey ? t(titleKey) : ''}
         </h1>
         <div className="flex flex-1 justify-center">
           <GlobalSearch />
@@ -205,12 +210,13 @@ function Layout({ children }: { children: ReactNode }) {
         <button
           type="button"
           onClick={refresh}
-          aria-label="Обновить данные"
-          title="Обновить данные"
+          aria-label={t('nav.refresh')}
+          title={t('nav.refresh')}
           className={iconBtn}
         >
           <RefreshCw className={`size-4 ${reloading ? 'animate-spin' : ''}`} />
         </button>
+        <LanguageSwitcher lang={lang} setLang={setLang} label={t('common.language')} />
       </header>
 
       <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:py-8">

@@ -15,7 +15,7 @@ export const glassActive =
   'bg-gradient-to-r from-blue-600/15 via-blue-500/10 to-rose-500/15 text-blue-950 ring-1 ring-inset ring-blue-500/25 backdrop-blur-md shadow-[0_6px_20px_-8px_rgba(29,78,216,0.45)]'
 // kichik tanlangan tugma/chip uchun
 export const glassChip = 'border-blue-500/40 bg-blue-600/10 text-blue-800 backdrop-blur-sm'
-// ADMIN belgisi
-export const glassBadge = 'bg-blue-600/15 text-blue-700 ring-1 ring-inset ring-blue-600/30 backdrop-blur-sm'
+// ADMIN belgisi: rangsiz "shisha" (oq, yarim shaffof, blur)
+export const glassBadge = 'bg-white/60 text-gray-700 ring-1 ring-inset ring-gray-900/10 shadow-sm backdrop-blur-md'
 // ko'rilmagan yangi buyurtma/xabar soni — yumshoq qizil (to'q emas), ko'zga tashlanadi lekin baqirmaydi
 export const alertBadge = 'bg-rose-100 text-rose-700 ring-1 ring-inset ring-rose-200'

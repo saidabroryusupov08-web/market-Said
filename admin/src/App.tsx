@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
+import { I18nProvider, useT } from './i18n'
 import { AuthProvider, useAuth } from './lib/auth'
 import { AdminDataProvider } from './lib/data'
 import Layout from './components/Layout'
@@ -14,12 +15,13 @@ import Products from './pages/Products'
 // (Bu faqat interfeys; ma'lumotlarni haqiqatan himoya qiladigani — bazadagi RLS.)
 function Gate() {
   const { state } = useAuth()
+  const { t } = useT()
 
   if (state.status === 'not-configured') return <NotConfigured />
   if (state.status === 'loading')
     return (
       <div className="flex min-h-screen items-center justify-center text-sm text-gray-400">
-        Загрузка...
+        {t('common.loading')}
       </div>
     )
   if (state.status === 'signed-out') return <Login notice={state.notice} />
@@ -45,11 +47,13 @@ function Gate() {
 
 function App() {
   return (
-    <ToastProvider>
-      <AuthProvider>
-        <Gate />
-      </AuthProvider>
-    </ToastProvider>
+    <I18nProvider>
+      <ToastProvider>
+        <AuthProvider>
+          <Gate />
+        </AuthProvider>
+      </ToastProvider>
+    </I18nProvider>
   )
 }
 

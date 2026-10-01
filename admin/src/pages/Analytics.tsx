@@ -2,17 +2,22 @@ import { useMemo, useState, type ReactNode } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { ArrowDownRight, ArrowUpRight, ChevronLeft, ChevronRight, Download, Minus } from 'lucide-react'
 import BarChart, { CHART_COLOR } from '../components/BarChart'
+import Select from '../components/Select'
 import { secondaryBtn } from '../components/styles'
+import { categoryLabel } from '../../../shared/dataLabels'
+import { useT } from '../i18n'
 import {
   availableMonths,
   changePercent,
   dailySeries,
+  dayLabel,
   monthKeyOf,
   monthLabel,
   monthlySeries,
   monthShort,
   money,
   moneyCompact,
+  OTHER_CATEGORY,
   salesByCategory,
   shiftMonth,
   summarize,
@@ -24,9 +29,10 @@ import { useAdminData } from '../lib/data'
 // Savdo hisoboti: 12 oylik aylanma (tepada, filtrga bog'liq emas), so'ng oy tanlash filtri va
 // uning ostidagi hamma narsa shu oyga tegishli: ko'rsatkichlar, kunma-kun savdo, top mahsulotlar.
 
-function Delta({ current, previous, suffix = 'к прошлому месяцу' }: { current: number; previous: number; suffix?: string }) {
+function Delta({ current, previous }: { current: number; previous: number }) {
+  const { t } = useT()
   const pct = changePercent(current, previous)
-  if (pct === null) return <p className="mt-1 text-xs text-gray-400">нет данных за прошлый месяц</p>
+  if (pct === null) return <p className="mt-1 text-xs text-gray-400">{t('analytics.noPrevData')}</p>
   const Icon = pct > 0 ? ArrowUpRight : pct < 0 ? ArrowDownRight : Minus
   const tone = pct > 0 ? 'text-green-700' : pct < 0 ? 'text-red-600' : 'text-gray-500'
   return (
@@ -36,7 +42,7 @@ function Delta({ current, previous, suffix = 'к прошлому месяцу' 
         {pct > 0 ? '+' : ''}
         {pct}%
       </span>
-      {suffix}
+      {t('analytics.vsPrev')}
     </p>
   )
 }
@@ -68,9 +74,10 @@ function Card({ title, subtitle, action, children }: { title: string; subtitle?:
 
 // grafikning jadval ko'rinishi (tooltipsiz ham har bir qiymatni o'qish uchun)
 function TableToggle({ open, onToggle }: { open: boolean; onToggle: () => void }) {
+  const { t } = useT()
   return (
     <button type="button" onClick={onToggle} aria-expanded={open} className={`${secondaryBtn} h-8 text-xs`}>
-      {open ? 'Скрыть таблицу' : 'Таблица'}
+      {open ? t('analytics.hideTable') : t('analytics.table')}
     </button>
   )
 }
@@ -79,18 +86,19 @@ const th = 'px-3 py-2 text-left text-xs font-medium text-gray-500'
 const td = 'px-3 py-2 tabular-nums'
 
 function MonthlyTable({ rows, selected, onSelect }: { rows: MonthSummary[]; selected: string; onSelect: (k: string) => void }) {
+  const { t } = useT()
   return (
     <div className="mt-4 overflow-x-auto rounded-lg border border-gray-200">
       <table className="w-full text-sm">
         <thead className="bg-gray-50">
           <tr>
-            <th className={th}>Месяц</th>
-            <th className={`${th} text-right`}>Заказов</th>
-            <th className={`${th} text-right`}>Оборот</th>
-            <th className={`${th} text-right`}>Средний чек</th>
-            <th className={`${th} text-right`}>Продано, шт.</th>
-            <th className={`${th} text-right`}>Доставлено</th>
-            <th className={`${th} text-right`}>Отмен</th>
+            <th className={th}>{t('analytics.colMonth')}</th>
+            <th className={`${th} text-right`}>{t('analytics.colOrders')}</th>
+            <th className={`${th} text-right`}>{t('analytics.colRevenue')}</th>
+            <th className={`${th} text-right`}>{t('analytics.colAverage')}</th>
+            <th className={`${th} text-right`}>{t('analytics.colUnits')}</th>
+            <th className={`${th} text-right`}>{t('analytics.colDelivered')}</th>
+            <th className={`${th} text-right`}>{t('analytics.colCancelled')}</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100">
@@ -139,15 +147,17 @@ function RankedBars({ rows, empty }: { rows: { key: string; name: string; value:
   )
 }
 
-function toCsv(rows: MonthSummary[]) {
+type TFn = ReturnType<typeof useT>['t']
+function toCsv(rows: MonthSummary[], t: TFn) {
   const cell = (v: unknown) => `"${String(v).replace(/"/g, '""')}"`
-  const header = ['Месяц', 'Заказов', 'Оборот', 'Средний чек', 'Продано, шт.', 'Доставлено', 'Отмен']
+  const header = (['colMonth', 'colOrders', 'colRevenue', 'colAverage', 'colUnits', 'colDelivered', 'colCancelled'] as const).map((k) => t(`analytics.${k}`))
   const body = [...rows].reverse().map((r) => [monthLabel(r.key), r.orders, r.revenue.toFixed(2), r.average.toFixed(2), r.units, r.delivered.toFixed(2), r.cancelled])
   return '﻿' + [header, ...body].map((row) => row.map(cell).join(';')).join('\r\n')
 }
 
 function Analytics() {
   const { orders, products, ordersLoaded } = useAdminData()
+  const { t, lang } = useT()
   const [params, setParams] = useSearchParams()
   const [now] = useState(() => new Date())
   const currentKey = monthKeyOf(now)
@@ -172,7 +182,7 @@ function Analytics() {
   const yearRevenue = monthly.reduce((s, m) => s + m.revenue, 0)
 
   const exportCsv = () => {
-    const url = URL.createObjectURL(new Blob([toCsv(monthly)], { type: 'text/csv;charset=utf-8' }))
+    const url = URL.createObjectURL(new Blob([toCsv(monthly, t)], { type: 'text/csv;charset=utf-8' }))
     const a = document.createElement('a')
     a.href = url
     a.download = `cx-shop-oborot-${currentKey}.csv`
@@ -180,13 +190,13 @@ function Analytics() {
     URL.revokeObjectURL(url)
   }
 
-  if (!ordersLoaded) return <p className="py-16 text-center text-sm text-gray-400">Загрузка...</p>
+  if (!ordersLoaded) return <p className="py-16 text-center text-sm text-gray-400">{t('common.loading')}</p>
 
   return (
     <div className="flex flex-col gap-6">
       <Card
-        title="Оборот по месяцам"
-        subtitle={`Последние 12 месяцев · всего ${money(yearRevenue)} · без отменённых заказов. Нажмите на месяц, чтобы открыть его отчёт`}
+        title={t('analytics.monthlyTitle')}
+        subtitle={t('analytics.monthlySubtitle', { total: money(yearRevenue) })}
         action={
           <div className="flex gap-2">
             <TableToggle open={showMonthlyTable} onToggle={() => setShowMonthlyTable((v) => !v)} />
@@ -198,13 +208,13 @@ function Analytics() {
         }
       >
         <BarChart
-          ariaLabel="Оборот по месяцам"
+          ariaLabel={t('analytics.monthlyTitle')}
           bars={monthly.map((m) => ({
             key: m.key,
             label: monthShort(m.key),
             value: m.revenue,
             title: monthLabel(m.key),
-            details: `${m.orders} заказов · средний чек ${money(m.average)}`,
+            details: t('analytics.monthDetails', { orders: m.orders, average: money(m.average) }),
           }))}
           selectedKey={selected}
           onSelect={select}
@@ -218,78 +228,75 @@ function Analytics() {
       <div className="flex flex-wrap items-center gap-2">
         <button
           type="button"
-          aria-label="Предыдущий месяц"
+          aria-label={t('analytics.prevMonth')}
           onClick={() => select(shiftMonth(selected, -1))}
           className={`${secondaryBtn} h-10 w-10 px-0`}
         >
           <ChevronLeft className="size-4" />
         </button>
-        <select
-          aria-label="Месяц отчёта"
+        <Select
+          ariaLabel={t('analytics.month')}
+          className="w-56"
           value={selected}
-          onChange={(e) => select(e.target.value)}
-          className="h-10 cursor-pointer rounded-lg border border-gray-300 bg-white px-3 text-sm font-medium outline-none focus:border-blue-500 focus:shadow-[0_0_0_4px_rgba(59,130,246,0.2)]"
-        >
-          {(months.includes(selected) ? months : [selected, ...months]).map((k) => (
-            <option key={k} value={k}>
-              {monthLabel(k)}
-              {k === currentKey ? ' (текущий)' : ''}
-            </option>
-          ))}
-        </select>
+          onChange={select}
+          options={(months.includes(selected) ? months : [selected, ...months]).map((k) => ({
+            value: k,
+            label: monthLabel(k) + (k === currentKey ? ` (${t('analytics.current')})` : ''),
+          }))}
+        />
         <button
           type="button"
-          aria-label="Следующий месяц"
+          aria-label={t('analytics.nextMonth')}
           disabled={selected >= currentKey}
           onClick={() => select(shiftMonth(selected, 1))}
           className={`${secondaryBtn} h-10 w-10 px-0`}
         >
           <ChevronRight className="size-4" />
         </button>
-        <p className="ml-1 text-sm text-gray-500">Отчёт за {monthLabel(selected).toLowerCase()}</p>
+        <p className="ml-1 text-sm text-gray-500">{t('analytics.reportFor', { month: lang === 'ru' ? monthLabel(selected).toLowerCase() : monthLabel(selected) })}</p>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Tile label="Оборот за месяц" value={money(summary.revenue)} hero>
+        <Tile label={t('analytics.tileRevenue')} value={money(summary.revenue)} hero>
           <Delta current={summary.revenue} previous={previous.revenue} />
         </Tile>
-        <Tile label="Заказов" value={String(summary.orders)}>
+        <Tile label={t('analytics.colOrders')} value={String(summary.orders)}>
           <Delta current={summary.orders} previous={previous.orders} />
         </Tile>
-        <Tile label="Средний чек" value={money(summary.average)}>
+        <Tile label={t('analytics.colAverage')} value={money(summary.average)}>
           <Delta current={summary.average} previous={previous.average} />
         </Tile>
-        <Tile label="Продано товаров" value={`${summary.units} шт.`}>
+        <Tile label={t('analytics.tileUnits')} value={t('common.pcs', { count: summary.units })}>
           <Delta current={summary.units} previous={previous.units} />
         </Tile>
-        <Tile label="Доставлено на сумму" value={money(summary.delivered)}>
+        <Tile label={t('analytics.tileDelivered')} value={money(summary.delivered)}>
           <p className="mt-1 text-xs text-gray-400">
-            {summary.revenue > 0 ? `${Math.round((summary.delivered / summary.revenue) * 100)}% от оборота` : '—'}
+            {summary.revenue > 0 ? t('analytics.ofRevenue', { pct: Math.round((summary.delivered / summary.revenue) * 100) }) : '—'}
           </p>
         </Tile>
-        <Tile label="Отменено заказов" value={String(summary.cancelled)}>
-          <p className="mt-1 text-xs text-gray-400">не входят в оборот</p>
+        <Tile label={t('analytics.tileCancelled')} value={String(summary.cancelled)}>
+          <p className="mt-1 text-xs text-gray-400">{t('analytics.notInRevenue')}</p>
         </Tile>
       </div>
 
       <Card
-        title="Продажи по дням"
-        subtitle={`${monthLabel(selected)} · оборот за каждый день`}
+        title={t('analytics.dailyTitle')}
+        subtitle={t('analytics.dailySubtitle', { month: monthLabel(selected) })}
         action={<TableToggle open={showDailyTable} onToggle={() => setShowDailyTable((v) => !v)} />}
       >
         {summary.orders === 0 ? (
-          <p className="py-10 text-center text-sm text-gray-400">В этом месяце продаж не было</p>
+          <p className="py-10 text-center text-sm text-gray-400">{t('analytics.noSalesMonth')}</p>
         ) : (
           <BarChart
-            ariaLabel={`Продажи по дням, ${monthLabel(selected)}`}
+            ariaLabel={`${t('analytics.dailyTitle')}, ${monthLabel(selected)}`}
             height={200}
             labelEvery={5}
             bars={daily.map((d) => ({
               key: String(d.day),
               label: String(d.day),
               value: d.revenue,
-              title: `${d.day} ${monthLabel(selected).split(' ')[0].toLowerCase()}`,
-              details: `${d.orders} заказов`,
+              title: dayLabel(selected, d.day),
+              details: t('analytics.ordersCount', { count: d.orders }),
             }))}
             formatValue={money}
             formatTick={moneyCompact}
@@ -300,9 +307,9 @@ function Analytics() {
             <table className="w-full text-sm">
               <thead className="sticky top-0 bg-gray-50">
                 <tr>
-                  <th className={th}>День</th>
-                  <th className={`${th} text-right`}>Заказов</th>
-                  <th className={`${th} text-right`}>Оборот</th>
+                  <th className={th}>{t('analytics.colDay')}</th>
+                  <th className={`${th} text-right`}>{t('analytics.colOrders')}</th>
+                  <th className={`${th} text-right`}>{t('analytics.colRevenue')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -320,14 +327,21 @@ function Analytics() {
       </Card>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <Card title="Самые продаваемые товары" subtitle={`${monthLabel(selected)} · по выручке`}>
+        <Card title={t('analytics.topTitle')} subtitle={t('analytics.topSubtitle', { month: monthLabel(selected) })}>
           <RankedBars
-            rows={top.map((p) => ({ key: p.key, name: p.name, value: p.revenue, note: `${p.units} шт.` }))}
-            empty="Продаж пока нет"
+            rows={top.map((p) => ({ key: p.key, name: p.name, value: p.revenue, note: t('common.pcs', { count: p.units }) }))}
+            empty={t('analytics.noSales')}
           />
         </Card>
-        <Card title="Выручка по категориям" subtitle={monthLabel(selected)}>
-          <RankedBars rows={categories.map((c) => ({ key: c.name, name: c.name, value: c.revenue }))} empty="Продаж пока нет" />
+        <Card title={t('analytics.categoryTitle')} subtitle={monthLabel(selected)}>
+          <RankedBars
+            rows={categories.map((c) => ({
+              key: c.name,
+              name: c.name === OTHER_CATEGORY ? t('analytics.otherCategory') : categoryLabel(lang, c.name),
+              value: c.revenue,
+            }))}
+            empty={t('analytics.noSales')}
+          />
         </Card>
       </div>
     </div>

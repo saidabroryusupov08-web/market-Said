@@ -7,6 +7,7 @@ import {
   type SiteSettingsRow,
 } from '../../../shared/siteSettings'
 import { supabase } from '../../../shared/supabase'
+import { useT } from '../../i18n'
 
 function scrollToProducts() {
   document.getElementById('products')?.scrollIntoView({ behavior: 'smooth' })
@@ -18,6 +19,11 @@ function Hero() {
   const [settings, setSettings] = useState<SiteSettings>(DEFAULT_SITE_SETTINGS)
   // bazadan kelguncha matn/rasm ko'rinmaydi: avval standarti chiqib, keyin almashib ketmasligi uchun
   const [ready, setReady] = useState(!supabase)
+  const { t } = useT()
+  // admin o'zgartirmagan standart matn tanlangan tilda ko'rsatiladi; o'zgartirilgani — qanday yozilgan bo'lsa
+  const title = settings.heroTitle === DEFAULT_SITE_SETTINGS.heroTitle ? t('hero.defaultTitle') : settings.heroTitle
+  const subtitle =
+    settings.heroSubtitle === DEFAULT_SITE_SETTINGS.heroSubtitle ? t('hero.defaultSubtitle') : settings.heroSubtitle
 
   useEffect(() => {
     if (!supabase) return
@@ -46,10 +52,10 @@ function Hero() {
       >
         <div>
           <h1 className="text-4xl leading-tight font-normal break-words text-gray-950 sm:text-5xl lg:text-6xl">
-            {settings.heroTitle}
+            {title}
           </h1>
           <p className="mt-6 max-w-[460px] text-lg leading-relaxed text-gray-500">
-            {settings.heroSubtitle}
+            {subtitle}
           </p>
 
           <div className="mt-6 flex flex-wrap gap-4">
@@ -58,25 +64,25 @@ function Hero() {
               onClick={scrollToProducts}
               className="rounded-md bg-gray-950 px-[21.5px] py-[7.5px] font-semibold text-white transition hover:bg-gray-800"
             >
-              Перейти к покупкам
+              {t('hero.shop')}
             </button>
             <button
               type="button"
               onClick={scrollToProducts}
               className="rounded-md border border-gray-200 bg-white px-[21.5px] py-[7.5px] font-semibold text-gray-950 transition hover:bg-gray-100"
             >
-              Смотреть каталог
+              {t('hero.catalog')}
             </button>
           </div>
 
           <ul className="mt-6 flex flex-wrap gap-8 text-sm text-gray-500">
             <li className="flex items-center gap-2">
               <span className="size-2 rounded-full bg-green-500" />
-              Бесплатная доставка
+              {t('hero.freeShipping')}
             </li>
             <li className="flex items-center gap-2">
               <span className="size-2 rounded-full bg-blue-500" />
-              Возврат в течение 30 дней
+              {t('hero.returns')}
             </li>
           </ul>
         </div>
@@ -84,7 +90,7 @@ function Hero() {
         <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-gray-200 lg:-ml-[20px] lg:w-[calc(100%+20px)]">
           <img
             src={resolveImage(settings.heroImage) ?? resolveImage(DEFAULT_SITE_SETTINGS.heroImage)}
-            alt="Интерьер магазина одежды cX-shop"
+            alt={t('hero.imageAlt')}
             className="size-full object-cover"
           />
         </div>

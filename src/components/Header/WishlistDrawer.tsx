@@ -4,10 +4,13 @@ import { useWishlist } from '../../context/WishlistContext'
 import { useProducts } from '../../context/ProductsContext'
 import ProductImage from '../sections/Products/ProductImage'
 import ProductPrice from '../sections/Products/ProductPrice'
+import { categoryLabel } from '../../../shared/dataLabels'
+import { useT } from '../../i18n'
 
 function WishlistDrawer() {
   const { likedIds, count, isOpen: open, closeWishlist: onClose, toggleLike } = useWishlist()
   const { products } = useProducts()
+  const { t, lang } = useT()
 
   const likedProducts = likedIds
     .map((id) => products.find((p) => p.id === id))
@@ -40,7 +43,7 @@ function WishlistDrawer() {
 
       <aside
         role="dialog"
-        aria-label="Избранное"
+        aria-label={t('wishlist.title')}
         className={`absolute top-0 right-0 flex h-full w-full max-w-md flex-col bg-white shadow-2xl transition-transform duration-500 ease-in-out ${
           open ? 'translate-x-0' : 'translate-x-full'
         }`}
@@ -48,11 +51,11 @@ function WishlistDrawer() {
         <div className="flex items-center justify-between p-6">
           <h2 className="flex items-center gap-2 text-xl font-medium text-black">
             <Heart className="size-5" />
-            Избранное ({count})
+            {t('wishlist.titleCount', { count })}
           </h2>
           <button
             type="button"
-            aria-label="Закрыть"
+            aria-label={t('common.close')}
             className="rounded-md p-1 text-gray-700 transition hover:bg-gray-100 hover:text-black"
             onClick={onClose}
           >
@@ -63,16 +66,16 @@ function WishlistDrawer() {
         {likedProducts.length === 0 ? (
           <div className="flex flex-1 flex-col items-center justify-center px-6 pb-24 text-center">
             <Heart className="mb-4 size-16 text-gray-500" strokeWidth={1.75} />
-            <p className="text-lg text-black">Список избранного пуст</p>
+            <p className="text-lg text-black">{t('wishlist.empty')}</p>
             <p className="mt-1 text-gray-500">
-              Нажмите на сердечко у товара, чтобы сохранить его здесь
+              {t('wishlist.emptyHint')}
             </p>
             <button
               type="button"
               className="mt-6 rounded-md bg-gray-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-gray-800"
               onClick={onClose}
             >
-              Продолжить покупки
+              {t('common.continueShopping')}
             </button>
           </div>
         ) : (
@@ -87,14 +90,14 @@ function WishlistDrawer() {
                     <p className="font-medium text-gray-950">{product.name}</p>
                     <button
                       type="button"
-                      aria-label="Убрать из избранного"
+                      aria-label={t('products.unlike')}
                       onClick={() => toggleLike(product.id)}
                       className="text-gray-400 transition hover:text-red-500"
                     >
                       <Heart className="size-4 fill-current" />
                     </button>
                   </div>
-                  <p className="text-sm text-gray-500">{product.category}</p>
+                  <p className="text-sm text-gray-500">{categoryLabel(lang, product.category)}</p>
                   <ProductPrice
                     product={product}
                     size=""

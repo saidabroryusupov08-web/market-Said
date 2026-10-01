@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from 'react'
 import { AlertTriangle, CheckCircle2, ExternalLink, Lock, X, XCircle } from 'lucide-react'
+import { useT } from '../i18n'
 import { useAuth } from '../lib/auth'
 import PasswordInput from './PasswordInput'
 import { iconBtn, secondaryBtn } from './styles'
@@ -72,6 +73,7 @@ export function Modal({
   children: ReactNode
   width?: string
 }) {
+  const { t } = useT()
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
     document.addEventListener('keydown', onKey)
@@ -95,7 +97,7 @@ export function Modal({
       >
         <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
           <h2 className="text-base font-semibold text-gray-950">{title}</h2>
-          <button type="button" aria-label="Закрыть" onClick={onClose} className={iconBtn}>
+          <button type="button" aria-label={t('common.close')} onClick={onClose} className={iconBtn}>
             <X className="size-4" />
           </button>
         </div>
@@ -111,9 +113,9 @@ export function Modal({
 // tone 'info': xavfsiz amal (masalan saytga o'tish) — qizil emas, ko'k ko'rinish
 export function ConfirmDialog({
   message,
-  confirmLabel = 'Да, удалить',
-  cancelLabel = 'Отмена',
-  title = 'Подтверждение',
+  confirmLabel,
+  cancelLabel,
+  title,
   onConfirm,
   onCancel,
   withPassword = false,
@@ -130,6 +132,8 @@ export function ConfirmDialog({
 }) {
   const danger = tone === 'danger'
   const { verifyPassword, needsPassword } = useAuth()
+  const { t } = useT()
+  const heading = title ?? t('confirm.title')
   // oyna ochilgan paytdagi holat: keyin taymer o'tib ketsa ham forma o'zgarmaydi
   const [askPassword] = useState(() => withPassword && needsPassword())
   const [password, setPassword] = useState('')
@@ -140,7 +144,7 @@ export function ConfirmDialog({
     e?.preventDefault()
     if (checking) return
     if (askPassword) {
-      if (!password) return setError('Введите пароль')
+      if (!password) return setError(t('confirm.enterPassword'))
       setChecking(true)
       const problem = await verifyPassword(password)
       setChecking(false)
@@ -157,7 +161,7 @@ export function ConfirmDialog({
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4" onClick={onCancel}>
       <form
         role="alertdialog"
-        aria-label={title}
+        aria-label={heading}
         onSubmit={confirm}
         noValidate
         className="w-full max-w-sm animate-[zoom-in_150ms_ease-out] rounded-xl bg-white p-5 shadow-xl"
@@ -165,7 +169,7 @@ export function ConfirmDialog({
       >
         <div className={`mb-3 flex items-center gap-2.5 ${danger ? 'text-red-600' : 'text-blue-600'}`}>
           {danger ? <AlertTriangle className="size-5" /> : <ExternalLink className="size-5" />}
-          <h3 className="text-base font-semibold text-gray-950">{title}</h3>
+          <h3 className="text-base font-semibold text-gray-950">{heading}</h3>
         </div>
         <p className="mb-4 text-sm text-gray-600">{message}</p>
         {askPassword && (
@@ -175,7 +179,7 @@ export function ConfirmDialog({
               htmlFor="confirm-password-check"
             >
               <Lock className="size-3.5" />
-              Для этого действия введите ваш пароль
+              {t('confirm.passwordPrompt')}
             </label>
             <PasswordInput
               id="confirm-password-check"
@@ -197,7 +201,7 @@ export function ConfirmDialog({
         )}
         <div className="flex justify-end gap-2">
           <button type="button" onClick={onCancel} className={secondaryBtn}>
-            {cancelLabel}
+            {cancelLabel ?? t('common.cancel')}
           </button>
           <button
             type="submit"
@@ -207,7 +211,7 @@ export function ConfirmDialog({
               danger ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'
             }`}
           >
-            {checking ? 'Проверка...' : confirmLabel}
+            {checking ? t('common.checking') : (confirmLabel ?? t('confirm.delete'))}
           </button>
         </div>
       </form>

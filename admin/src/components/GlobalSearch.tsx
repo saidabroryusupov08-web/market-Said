@@ -4,6 +4,9 @@ import { ImageIcon, Mail, Package, Search, ShoppingBag, X } from 'lucide-react'
 import { resolveImage } from '../../../shared/images'
 import { minPrice } from '../../../shared/price'
 import { createMatcher } from '../../../shared/search'
+import { numericDate } from '../../../shared/dates'
+import { categoryLabel } from '../../../shared/dataLabels'
+import { useT } from '../i18n'
 import { useAdminData } from '../lib/data'
 
 type Result =
@@ -14,15 +17,16 @@ type Result =
 const LIMIT = 5
 
 const GROUPS = [
-  { kind: 'order', label: 'Заказы' },
-  { kind: 'product', label: 'Товары' },
-  { kind: 'message', label: 'Сообщения' },
+  { kind: 'order', label: 'nav.orders' },
+  { kind: 'product', label: 'nav.products' },
+  { kind: 'message', label: 'nav.messages' },
 ] as const
 
 // Admin panelning o'z qidiruvi: buyurtmalar (№, ism, telefon), mahsulotlar (nom, kategoriya,
 // rang — inglizcha/o'zbekcha ham) va xabarlar (email) bo'yicha. Ctrl+K (yoki /) bilan ochiladi.
 function GlobalSearch() {
   const { products, messages, orders } = useAdminData()
+  const { t, lang } = useT()
   const navigate = useNavigate()
   const inputRef = useRef<HTMLInputElement>(null)
   const boxRef = useRef<HTMLDivElement>(null)
@@ -43,7 +47,7 @@ function GlobalSearch() {
         kind: 'product',
         id: p.id,
         title: p.name,
-        subtitle: `${p.category} · $${minPrice(p).toFixed(2)}`,
+        subtitle: `${categoryLabel(lang, p.category)} · $${minPrice(p).toFixed(2)}`,
         image: resolveImage(p.image),
         to: `/products?edit=${p.id}`,
       }))
@@ -54,7 +58,7 @@ function GlobalSearch() {
         kind: 'message',
         id: m.id,
         title: m.email,
-        subtitle: new Date(m.created_at).toLocaleDateString('ru-RU'),
+        subtitle: numericDate(new Date(m.created_at), lang),
         to: `/messages?q=${encodeURIComponent(m.email)}`,
       }))
     const idQuery = q.replace(/^#/, '')
@@ -75,7 +79,7 @@ function GlobalSearch() {
         to: `/orders?id=${o.id}`,
       }))
     return [...orderHits, ...productHits, ...messageHits]
-  }, [q, products, messages, orders])
+  }, [q, products, messages, orders, lang])
 
   // Ctrl+K yoki "/" — qidiruvga o'tish (yozish maydonida turganda "/" ishlamaydi)
   useEffect(() => {
@@ -138,15 +142,15 @@ function GlobalSearch() {
         }}
         onFocus={() => setOpen(true)}
         onKeyDown={onKeyDown}
-        placeholder="Поиск: заказы, товары, email..."
-        aria-label="Поиск по админ-панели"
+        placeholder={t('search.placeholder')}
+        aria-label={t('search.label')}
         autoComplete="off"
         className="h-10 w-full rounded-lg border border-gray-200 bg-gray-50 pr-16 pl-9 text-sm outline-none transition focus:border-blue-500 focus:bg-white focus:shadow-[0_0_0_4px_rgba(59,130,246,0.2)]"
       />
       {query ? (
         <button
           type="button"
-          aria-label="Очистить"
+          aria-label={t('common.clear')}
           onClick={() => {
             setQuery('')
             inputRef.current?.focus()
@@ -165,7 +169,7 @@ function GlobalSearch() {
         <div className="absolute top-full right-0 left-0 z-40 mt-2 max-h-[70vh] overflow-y-auto rounded-xl border border-gray-200 bg-white p-1.5 shadow-xl">
           {results.length === 0 ? (
             <p className="px-3 py-6 text-center text-sm text-gray-400">
-              Ничего не найдено по «{query.trim()}»
+              {t('search.nothing', { query: query.trim() })}
             </p>
           ) : (
             GROUPS.map(({ kind, label }) => {
@@ -174,7 +178,7 @@ function GlobalSearch() {
               return (
                 <div key={kind} className="py-1">
                   <p className="px-2.5 pb-1 text-[11px] font-semibold tracking-wide text-gray-400 uppercase">
-                    {label}
+                    {t(label)}
                   </p>
                   {group.map((r) => {
                     const index = results.indexOf(r)

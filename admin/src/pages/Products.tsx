@@ -3,14 +3,16 @@ import { useSearchParams } from 'react-router-dom'
 import { Eye, EyeOff, ImageIcon, Pencil, Plus, Search, Trash2 } from 'lucide-react'
 import { resolveImage } from '../../../shared/images'
 import { hasSizePriceRange, minPrice } from '../../../shared/price'
-import { categories, discountPercent, NAV_TAGS, type Product } from '../../../shared/products'
+import { categoryLabel, tagLabel } from '../../../shared/dataLabels'
+import { categories, discountPercent, type Product } from '../../../shared/products'
 import { createMatcher } from '../../../shared/search'
+import { useT } from '../i18n'
 import { useAdminData, type ProductInput } from '../lib/data'
+import Select from '../components/Select'
 import ProductForm from '../components/ProductForm'
 import { ConfirmDialog, Modal, useToast } from '../components/ui'
 import { iconBtn, inputClass, primaryBtn } from '../components/styles'
 
-const tagLabel = Object.fromEntries(NAV_TAGS.map((t) => [t.value, t.label]))
 
 function Thumb({ product }: { product: Product }) {
   const src = resolveImage(product.image)
@@ -25,12 +27,15 @@ function Thumb({ product }: { product: Product }) {
   )
 }
 
-const priceLabel = (p: Product) =>
-  `${hasSizePriceRange(p) ? 'от ' : ''}$${minPrice(p).toFixed(2)}`
+// "от $29.99" — prefix tarjimada
+const priceLabel = (p: Product, from: string) =>
+  `${hasSizePriceRange(p) ? from + ' ' : ''}$${minPrice(p).toFixed(2)}`
 
 function Products() {
   const { products, productsLoaded, deleteProduct, updateProduct } = useAdminData()
   const showToast = useToast()
+  const { t, lang } = useT()
+  const price = (p: Product) => priceLabel(p, t('common.from'))
   // qidiruv, filtr va ochiq forma manzilda turadi: global qidiruvdan kelganda ham ishlaydi
   const [params, setParams] = useSearchParams()
   const [search, setSearch] = useState('')
@@ -65,7 +70,7 @@ function Products() {
     const input: ProductInput = { ...p, isActive: p.isActive === false }
     const error = await updateProduct(p.id, input)
     showToast(
-      error ?? (input.isActive ? `«${p.name}» снова на сайте` : `«${p.name}» скрыт с сайта`),
+      error ?? (input.isActive ? t('products.shownAgain', { name: p.name }) : t('products.hiddenNow', { name: p.name })),
       error ? 'error' : 'success',
     )
   }
@@ -75,7 +80,7 @@ function Products() {
     const product = toDelete
     setToDelete(null)
     const error = await deleteProduct(product.id)
-    showToast(error ?? `«${product.name}» удалён`, error ? 'error' : 'success')
+    showToast(error ?? t('products.deleted', { name: product.name }), error ? 'error' : 'success')
   }
 
   return (
@@ -85,46 +90,45 @@ function Products() {
           <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-gray-400" />
           <input
             className={`${inputClass} pl-9`}
-            placeholder="Поиск по названию, цвету, описанию..."
+            placeholder={t('products.searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <select
-          aria-label="Категория"
-          className={`${inputClass} cursor-pointer sm:w-48`}
+        <Select
+          ariaLabel={t('form.category')}
+          className="sm:w-48"
           value={category}
-          onChange={(e) => updateParam('category', e.target.value === 'Все' ? null : e.target.value)}
-        >
-          {categories.map((c) => (
-            <option key={c} value={c}>
-              {c === 'Все' ? 'Все категории' : c}
-            </option>
-          ))}
-        </select>
-        <select
-          aria-label="Видимость"
-          className={`${inputClass} cursor-pointer sm:w-40`}
+          onChange={(v) => updateParam('category', v === 'Все' ? null : v)}
+          options={categories.map((c) => ({
+            value: c,
+            label: c === 'Все' ? t('products.allCategories') : categoryLabel(lang, c),
+          }))}
+        />
+        <Select
+          ariaLabel={t('form.visibility')}
+          className="sm:w-44"
           value={visibility}
-          onChange={(e) => updateParam('visibility', e.target.value === 'all' ? null : e.target.value)}
-        >
-          <option value="all">Все товары</option>
-          <option value="active">На сайте</option>
-          <option value="hidden">Скрытые</option>
-        </select>
+          onChange={(v) => updateParam('visibility', v === 'all' ? null : v)}
+          options={[
+            { value: 'all', label: t('products.allProducts') },
+            { value: 'active', label: t('products.onSite') },
+            { value: 'hidden', label: t('products.hiddenFilter') },
+          ]}
+        />
         <button type="button" onClick={() => setAdding(true)} className={primaryBtn}>
           <Plus className="size-4" />
-          Добавить товар
+          {t('products.add')}
         </button>
       </div>
 
       <p className="mb-3 text-sm text-gray-500">
-        {productsLoaded ? `Показано: ${visible.length} из ${products.length}` : 'Загрузка...'}
+        {productsLoaded ? t('products.shown', { visible: visible.length, total: products.length }) : t('common.loading')}
       </p>
 
       {productsLoaded && visible.length === 0 ? (
         <div className="rounded-xl border border-dashed border-gray-300 px-6 py-16 text-center text-sm text-gray-500">
-          {products.length === 0 ? 'Товаров пока нет — добавьте первый.' : 'Ничего не найдено.'}
+          {products.length === 0 ? t('products.emptyAll') : t('common.nothingFound')}
         </div>
       ) : (
         <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
@@ -132,11 +136,11 @@ function Products() {
           <table className="hidden w-full text-sm md:table">
             <thead className="border-b border-gray-200 bg-gray-50 text-left text-xs font-medium text-gray-500">
               <tr>
-                <th className="px-4 py-3">Товар</th>
-                <th className="px-4 py-3">Категория</th>
-                <th className="px-4 py-3">Цена</th>
-                <th className="px-4 py-3">Размеры / цвета</th>
-                <th className="px-4 py-3 text-right">Действия</th>
+                <th className="px-4 py-3">{t('products.colProduct')}</th>
+                <th className="px-4 py-3">{t('form.category')}</th>
+                <th className="px-4 py-3">{t('products.colPrice')}</th>
+                <th className="px-4 py-3">{t('products.colSizes')}</th>
+                <th className="px-4 py-3 text-right">{t('products.colActions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -151,15 +155,15 @@ function Products() {
                           <div className="mt-1 flex flex-wrap gap-1">
                             {p.isActive === false && (
                               <span className="rounded bg-gray-900 px-1.5 py-0.5 text-[10px] font-semibold text-white">
-                                Скрыт
+                                {t('products.hiddenBadge')}
                               </span>
                             )}
-                            {p.tags?.map((t) => (
+                            {p.tags?.map((tg) => (
                               <span
-                                key={t}
+                                key={tg}
                                 className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-600"
                               >
-                                {tagLabel[t] ?? t}
+                                {tagLabel(lang, tg)}
                               </span>
                             ))}
                           </div>
@@ -167,9 +171,9 @@ function Products() {
                       </div>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-gray-600">{p.category}</td>
+                  <td className="px-4 py-3 text-gray-600">{categoryLabel(lang, p.category)}</td>
                   <td className="px-4 py-3 whitespace-nowrap">
-                    <p className="font-medium text-gray-950">{priceLabel(p)}</p>
+                    <p className="font-medium text-gray-950">{price(p)}</p>
                     {discountPercent(p) > 0 && (
                       <p className="text-xs">
                         <span className="text-gray-400 line-through">${p.oldPrice!.toFixed(2)}</span>
@@ -185,8 +189,8 @@ function Products() {
                     <div className="flex justify-end gap-1">
                       <button
                         type="button"
-                        aria-label={p.isActive === false ? `Показать ${p.name} на сайте` : `Скрыть ${p.name} с сайта`}
-                        title={p.isActive === false ? 'Показать на сайте' : 'Скрыть с сайта'}
+                        aria-label={p.isActive === false ? t('products.showAria', { name: p.name }) : t('products.hideAria', { name: p.name })}
+                        title={p.isActive === false ? t('products.show') : t('products.hide')}
                         onClick={() => toggleVisibility(p)}
                         className={iconBtn}
                       >
@@ -194,8 +198,8 @@ function Products() {
                       </button>
                       <button
                         type="button"
-                        aria-label={`Редактировать ${p.name}`}
-                        title="Редактировать"
+                        aria-label={t('products.editAria', { name: p.name })}
+                        title={t('common.edit')}
                         onClick={() => updateParam('edit', String(p.id))}
                         className={iconBtn}
                       >
@@ -203,8 +207,8 @@ function Products() {
                       </button>
                       <button
                         type="button"
-                        aria-label={`Удалить ${p.name}`}
-                        title="Удалить"
+                        aria-label={t('products.deleteAria', { name: p.name })}
+                        title={t('common.delete')}
                         onClick={() => setToDelete(p)}
                         className={`${iconBtn} hover:bg-red-50 hover:text-red-600`}
                       >
@@ -229,14 +233,14 @@ function Products() {
                 >
                   <p className="truncate text-sm font-medium text-gray-950">{p.name}</p>
                   <p className="text-xs text-gray-500">
-                    {p.category} · {priceLabel(p)}
+                    {categoryLabel(lang, p.category)} · {price(p)}
                     {discountPercent(p) > 0 && <span className="ml-1 text-red-600">−{discountPercent(p)}%</span>}
-                    {p.isActive === false && <span className="ml-1 font-semibold text-gray-900">· скрыт</span>}
+                    {p.isActive === false && <span className="ml-1 font-semibold text-gray-900">· {t('products.hiddenLower')}</span>}
                   </p>
                 </button>
                 <button
                   type="button"
-                  aria-label={`Удалить ${p.name}`}
+                  aria-label={t('products.deleteAria', { name: p.name })}
                   onClick={() => setToDelete(p)}
                   className={`${iconBtn} hover:bg-red-50 hover:text-red-600`}
                 >
@@ -249,13 +253,13 @@ function Products() {
       )}
 
       {adding && (
-        <Modal title="Новый товар" onClose={() => setAdding(false)}>
+        <Modal title={t('products.newTitle')} onClose={() => setAdding(false)}>
           <ProductForm onDone={() => setAdding(false)} />
         </Modal>
       )}
 
       {editing && (
-        <Modal title="Редактирование товара" onClose={() => updateParam('edit', null)}>
+        <Modal title={t('products.editTitle')} onClose={() => updateParam('edit', null)}>
           <ProductForm key={editing.id} product={editing} onDone={() => updateParam('edit', null)} />
         </Modal>
       )}
@@ -263,7 +267,7 @@ function Products() {
       {toDelete && (
         <ConfirmDialog
           withPassword
-          message={`Удалить «${toDelete.name}»? Товар исчезнет с сайта. Это действие нельзя отменить.`}
+          message={t('products.deleteConfirm', { name: toDelete.name })}
           onConfirm={confirmDelete}
           onCancel={() => setToDelete(null)}
         />

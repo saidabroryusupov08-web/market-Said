@@ -1,14 +1,15 @@
 import type { Product } from '../../../shared/products'
+import { dayMonth, monthName, monthShortName } from '../../../shared/dates'
 import type { Order } from './orders'
+
+// kategoriyasi topilmagan mahsulotlar (ko'rsatishda t('analytics.otherCategory'))
+export const OTHER_CATEGORY = '__other__'
 
 // Savdo hisoboti: oylik aylanma (oborot), buyurtmalar, o'rtacha chek, sotilgan dona,
 // eng ko'p sotilgan mahsulotlar. Bekor qilingan buyurtmalar aylanmaga kirmaydi.
 // Oylar brauzer vaqt zonasida (Toshkent) hisoblanadi.
 
 export type MonthKey = string // '2026-09'
-
-const MONTHS_RU = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь']
-const MONTHS_SHORT = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек']
 
 export const monthKeyOf = (date: Date): MonthKey =>
   `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
@@ -18,14 +19,21 @@ const parseKey = (key: MonthKey) => {
   return { year: y, month: m - 1 }
 }
 
+// oy nomlari tanlangan tilda: 'Сентябрь 2026' / 'September 2026' / 'Sentabr 2026'
 export const monthLabel = (key: MonthKey) => {
   const { year, month } = parseKey(key)
-  return `${MONTHS_RU[month]} ${year}`
+  return `${monthName(new Date(year, month, 1))} ${year}`
 }
 
 export const monthShort = (key: MonthKey) => {
   const { year, month } = parseKey(key)
-  return `${MONTHS_SHORT[month]} ${String(year).slice(2)}`
+  return `${monthShortName(new Date(year, month, 1))} ${String(year).slice(2)}`
+}
+
+// kun + oy nomi: '1 сентября' / 'September 1' / '1-sentabr'
+export const dayLabel = (key: MonthKey, day: number) => {
+  const { year, month } = parseKey(key)
+  return dayMonth(new Date(year, month, day))
 }
 
 export const shiftMonth = (key: MonthKey, delta: number): MonthKey => {
@@ -115,7 +123,7 @@ export function salesByCategory(key: MonthKey, orders: Order[], products: Produc
   for (const o of orders) {
     if (monthKeyOf(new Date(o.created_at)) !== key || !counts(o)) continue
     for (const i of o.items) {
-      const cat = categoryOf.get(i.productId) ?? 'Другое'
+      const cat = categoryOf.get(i.productId) ?? OTHER_CATEGORY
       map.set(cat, round2((map.get(cat) ?? 0) + i.price * i.quantity))
     }
   }

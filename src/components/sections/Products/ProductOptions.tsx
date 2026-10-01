@@ -3,6 +3,8 @@ import { Check } from 'lucide-react'
 import { useCart } from '../../../context/CartContext'
 import type { Product } from '../../../data/products'
 import Select from '../../ui/Select'
+import { colorLabel, sizeLabel } from '../../../../shared/dataLabels'
+import { useT } from '../../../i18n'
 
 type ProductOptionsProps = {
   product: Product
@@ -14,6 +16,7 @@ type ProductOptionsProps = {
 
 function ProductOptions({ product, size: rawSize, onSizeChange, onAdded }: ProductOptionsProps) {
   const { addItem } = useCart()
+  const { t, lang } = useT()
   const [rawColor, setColor] = useState('')
   // admin o'lcham/rangni o'chirib yuborsa, eski tanlov hisobga olinmaydi
   // (aks holda maydonda "Размер" turgan bo'lsa ham tugma faol bo'lib qolardi)
@@ -45,19 +48,19 @@ function ProductOptions({ product, size: rawSize, onSizeChange, onAdded }: Produ
     <div className="flex flex-col gap-2">
       <div className="grid grid-cols-2 gap-2">
         <Select
-          ariaLabel="Размер"
-          placeholder="Размер"
+          ariaLabel={t('products.size')}
+          placeholder={t('products.size')}
           value={size}
           onChange={onSizeChange}
-          options={product.sizes.map((s) => ({ value: s, label: s }))}
+          options={product.sizes.map((s) => ({ value: s, label: sizeLabel(lang, s) }))}
           invalid={showHint && !size}
         />
         <Select
-          ariaLabel="Цвет"
-          placeholder="Цвет"
+          ariaLabel={t('products.color')}
+          placeholder={t('products.color')}
           value={color}
           onChange={setColor}
-          options={product.colors.map((c) => ({ value: c, label: c }))}
+          options={product.colors.map((c) => ({ value: c, label: colorLabel(lang, c) }))}
           invalid={showHint && !color}
         />
       </div>
@@ -77,15 +80,15 @@ function ProductOptions({ product, size: rawSize, onSizeChange, onAdded }: Produ
       >
         {added ? (
           <>
-            <Check className="size-4" /> Добавлено
+            <Check className="size-4" /> {t('products.added')}
           </>
         ) : showHint ? (
           // maslahat tugmaning o'zida: alohida qator kartaning balandligini o'zgartirib yuborardi
           <span role="alert">
-            {!size && !color ? 'Выберите размер и цвет' : !size ? 'Выберите размер' : 'Выберите цвет'}
+            {!size && !color ? t('products.pickBoth') : !size ? t('products.pickSize') : t('products.pickColor')}
           </span>
         ) : (
-          'Добавить в корзину'
+          t('products.addToCart')
         )}
       </button>
     </div>

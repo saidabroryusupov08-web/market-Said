@@ -3,7 +3,10 @@ import { ImageIcon, Loader2, Upload, X } from 'lucide-react'
 import { resolveImage } from '../../../shared/images'
 import { autoSizePrice } from '../../../shared/price'
 import { categories, NAV_TAGS, type NavTag, type Product } from '../../../shared/products'
+import { categoryLabel, tagLabel } from '../../../shared/dataLabels'
+import { useT } from '../i18n'
 import { useAdminData, type ProductInput } from '../lib/data'
+import Select from './Select'
 import { resizeImage } from '../lib/image'
 import { useToast } from './ui'
 import { glassChip, inputClass, labelClass, primaryBtn, secondaryBtn } from './styles'
@@ -50,6 +53,7 @@ function toForm(product?: Product): FormState {
 function ProductForm({ product, onDone }: { product?: Product; onDone: () => void }) {
   const { createProduct, updateProduct, uploadImage, removeImage } = useAdminData()
   const showToast = useToast()
+  const { t, lang } = useT()
   const [form, setForm] = useState<FormState>(() => toForm(product))
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({})
   const [uploading, setUploading] = useState(false)
@@ -84,7 +88,7 @@ function ProductForm({ product, onDone }: { product?: Product; onDone: () => voi
 
   const onFile = async (file?: File) => {
     if (!file) return
-    if (!file.type.startsWith('image/')) return showToast('Выберите файл изображения', 'error')
+    if (!file.type.startsWith('image/')) return showToast(t('common.pickImage'), 'error')
     setUploading(true)
     try {
       const result = await uploadImage(await resizeImage(file))
@@ -94,7 +98,7 @@ function ProductForm({ product, onDone }: { product?: Product; onDone: () => voi
         set('image', result.url)
       }
     } catch {
-      showToast('Не удалось загрузить изображение', 'error')
+      showToast(t('common.imageUploadFailed'), 'error')
     } finally {
       setUploading(false)
     }
@@ -104,13 +108,13 @@ function ProductForm({ product, onDone }: { product?: Product; onDone: () => voi
     e.preventDefault()
     const colors = splitList(form.colors)
     const next: typeof errors = {}
-    if (!form.name.trim()) next.name = 'Введите название'
-    if (!(basePrice > 0)) next.price = 'Цена должна быть больше 0'
-    if (sizes.length === 0) next.sizes = 'Укажите хотя бы один размер'
-    if (colors.length === 0) next.colors = 'Укажите хотя бы один цвет'
+    if (!form.name.trim()) next.name = t('form.enterName')
+    if (!(basePrice > 0)) next.price = t('form.pricePositive')
+    if (sizes.length === 0) next.sizes = t('form.needSize')
+    if (colors.length === 0) next.colors = t('form.needColor')
     const oldPrice = form.oldPrice.trim() ? Number(form.oldPrice) : undefined
     if (oldPrice !== undefined && !(oldPrice > basePrice))
-      next.oldPrice = 'Старая цена должна быть больше текущей'
+      next.oldPrice = t('form.oldPriceGreater')
     if (Object.keys(next).length > 0) return setErrors(next)
 
     const sizePrices = Object.fromEntries(
@@ -137,7 +141,7 @@ function ProductForm({ product, onDone }: { product?: Product; onDone: () => voi
     setSaving(false)
     if (error) return showToast(error, 'error')
     trackerRef.current.saved = input.image
-    showToast(product ? 'Изменения сохранены' : 'Товар добавлен')
+    showToast(product ? t('form.saved') : t('form.added'))
     onDone()
   }
 
@@ -150,7 +154,7 @@ function ProductForm({ product, onDone }: { product?: Product; onDone: () => voi
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-[160px_1fr]">
         {/* rasm */}
         <div>
-          <span className={labelClass}>Фото</span>
+          <span className={labelClass}>{t('form.photo')}</span>
           <div className="relative aspect-square overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
             {preview ? (
               <img src={preview} alt="" className="size-full object-cover" />
@@ -167,7 +171,7 @@ function ProductForm({ product, onDone }: { product?: Product; onDone: () => voi
             {preview && !uploading && (
               <button
                 type="button"
-                aria-label="Убрать фото"
+                aria-label={t('form.removePhoto')}
                 onClick={() => set('image', '')}
                 className="absolute top-1.5 right-1.5 cursor-pointer rounded-full bg-white/90 p-1 text-gray-600 shadow hover:text-black"
               >
@@ -177,7 +181,7 @@ function ProductForm({ product, onDone }: { product?: Product; onDone: () => voi
           </div>
           <label className={`${secondaryBtn} mt-2 w-full`}>
             <Upload className="size-3.5" />
-            Загрузить
+            {t('form.upload')}
             <input
               type="file"
               accept="image/*"
@@ -190,7 +194,7 @@ function ProductForm({ product, onDone }: { product?: Product; onDone: () => voi
           </label>
           <input
             className={`${inputClass} mt-2 h-8 text-xs`}
-            placeholder="или ссылка (URL)"
+            placeholder={t('form.orUrl')}
             value={/^https?:/.test(form.image) ? form.image : ''}
             onChange={(e) => set('image', e.target.value)}
           />
@@ -200,13 +204,13 @@ function ProductForm({ product, onDone }: { product?: Product; onDone: () => voi
         <div className="grid grid-cols-1 content-start gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2">
             <label className={labelClass} htmlFor="p-name">
-              Название
+              {t('form.name')}
             </label>
             <input
               id="p-name"
               autoFocus
               className={`${inputClass} ${errorBorder('name')}`}
-              placeholder="Например: Классическая белая футболка"
+              placeholder={t('form.namePlaceholder')}
               value={form.name}
               onChange={(e) => set('name', e.target.value)}
             />
@@ -214,24 +218,21 @@ function ProductForm({ product, onDone }: { product?: Product; onDone: () => voi
           </div>
           <div>
             <label className={labelClass} htmlFor="p-category">
-              Категория
+              {t('form.category')}
             </label>
-            <select
+            <Select
               id="p-category"
-              className={`${inputClass} cursor-pointer`}
+              ariaLabel={t('form.category')}
               value={form.category}
-              onChange={(e) => set('category', e.target.value)}
-            >
-              {categories
+              onChange={(v) => set('category', v)}
+              options={categories
                 .filter((c) => c !== 'Все')
-                .map((c) => (
-                  <option key={c}>{c}</option>
-                ))}
-            </select>
+                .map((c) => ({ value: c, label: categoryLabel(lang, c) }))}
+            />
           </div>
           <div>
             <label className={labelClass} htmlFor="p-price">
-              Цена ($)
+              {t('form.price')}
             </label>
             <input
               id="p-price"
@@ -247,7 +248,7 @@ function ProductForm({ product, onDone }: { product?: Product; onDone: () => voi
           </div>
           <div>
             <label className={labelClass} htmlFor="p-old-price">
-              Старая цена (для скидки)
+              {t('form.oldPrice')}
             </label>
             <input
               id="p-old-price"
@@ -255,19 +256,19 @@ function ProductForm({ product, onDone }: { product?: Product; onDone: () => voi
               step="0.01"
               min="0"
               className={`${inputClass} ${errorBorder('oldPrice')}`}
-              placeholder="пусто — без скидки"
+              placeholder={t('form.oldPricePlaceholder')}
               value={form.oldPrice}
               onChange={(e) => set('oldPrice', e.target.value)}
             />
             {fieldError('oldPrice')}
             {!errors.oldPrice && Number(form.oldPrice) > basePrice && basePrice > 0 && (
               <p className="mt-1 text-xs text-red-600">
-                На сайте: −{Math.round((1 - basePrice / Number(form.oldPrice)) * 100)}%
+                {t('form.onSiteDiscount', { percent: Math.round((1 - basePrice / Number(form.oldPrice)) * 100) })}
               </p>
             )}
           </div>
           <div>
-            <span className={labelClass}>Видимость</span>
+            <span className={labelClass}>{t('form.visibility')}</span>
             {/* o'chirilsa mahsulot saytdan yashiriladi, lekin bazada qoladi */}
             <button
               type="button"
@@ -283,12 +284,12 @@ function ProductForm({ product, onDone }: { product?: Product; onDone: () => voi
                   className={`absolute top-0.5 size-4 rounded-full bg-white shadow transition-all ${form.isActive ? 'left-[18px]' : 'left-0.5'}`}
                 />
               </span>
-              {form.isActive ? 'Показывать на сайте' : 'Скрыт с сайта'}
+              {form.isActive ? t('form.visible') : t('form.hidden')}
             </button>
           </div>
           <div>
             <label className={labelClass} htmlFor="p-sizes">
-              Размеры (через запятую)
+              {t('form.sizes')}
             </label>
             <input
               id="p-sizes"
@@ -301,12 +302,12 @@ function ProductForm({ product, onDone }: { product?: Product; onDone: () => voi
           </div>
           <div>
             <label className={labelClass} htmlFor="p-colors">
-              Цвета (через запятую)
+              {t('form.colors')}
             </label>
             <input
               id="p-colors"
               className={`${inputClass} ${errorBorder('colors')}`}
-              placeholder="Чёрный, Белый"
+              placeholder={t('form.colorsPlaceholder')}
               value={form.colors}
               onChange={(e) => set('colors', e.target.value)}
             />
@@ -317,7 +318,7 @@ function ProductForm({ product, onDone }: { product?: Product; onDone: () => voi
 
       {sizes.length > 1 && (
         <div>
-          <span className={labelClass}>Цена по размерам (пусто — рассчитается автоматически)</span>
+          <span className={labelClass}>{t('form.sizePrices')}</span>
           <div className="grid grid-cols-[repeat(auto-fill,minmax(5.5rem,1fr))] gap-2">
             {sizes.map((size) => (
               <label key={size} className="flex flex-col gap-0.5">
@@ -328,7 +329,7 @@ function ProductForm({ product, onDone }: { product?: Product; onDone: () => voi
                   min="0"
                   className={`${inputClass} h-9 px-2`}
                   placeholder={
-                    basePrice > 0 ? autoSizePrice({ price: basePrice, sizes }, size).toFixed(2) : 'авто'
+                    basePrice > 0 ? autoSizePrice({ price: basePrice, sizes }, size).toFixed(2) : t('form.auto')
                   }
                   value={form.sizePrices[size] ?? ''}
                   onChange={(e) => set('sizePrices', { ...form.sizePrices, [size]: e.target.value })}
@@ -341,20 +342,20 @@ function ProductForm({ product, onDone }: { product?: Product; onDone: () => voi
 
       <div>
         <label className={labelClass} htmlFor="p-description">
-          Описание
+          {t('form.description')}
         </label>
         <textarea
           id="p-description"
           rows={3}
           className={`${inputClass} h-auto py-2`}
-          placeholder="Краткое описание товара"
+          placeholder={t('form.descriptionPlaceholder')}
           value={form.description}
           onChange={(e) => set('description', e.target.value)}
         />
       </div>
 
       <div>
-        <span className={labelClass}>Разделы в меню сайта</span>
+        <span className={labelClass}>{t('form.tags')}</span>
         <div className="flex flex-wrap gap-1.5">
           {NAV_TAGS.map((tag) => {
             const on = form.tags.includes(tag.value)
@@ -364,7 +365,7 @@ function ProductForm({ product, onDone }: { product?: Product; onDone: () => voi
                 type="button"
                 aria-pressed={on}
                 onClick={() =>
-                  set('tags', on ? form.tags.filter((t) => t !== tag.value) : [...form.tags, tag.value])
+                  set('tags', on ? form.tags.filter((x) => x !== tag.value) : [...form.tags, tag.value])
                 }
                 className={`cursor-pointer rounded-full border px-3 py-1 text-xs font-medium transition ${
                   on
@@ -372,7 +373,7 @@ function ProductForm({ product, onDone }: { product?: Product; onDone: () => voi
                     : 'border-gray-300 text-gray-600 hover:bg-gray-100'
                 }`}
               >
-                {tag.label}
+                {tagLabel(lang, tag.value)}
               </button>
             )
           })}
@@ -381,10 +382,10 @@ function ProductForm({ product, onDone }: { product?: Product; onDone: () => voi
 
       <div className="flex justify-end gap-2 border-t border-gray-100 pt-4">
         <button type="button" onClick={onDone} className={`${secondaryBtn} h-10`}>
-          Отмена
+          {t('common.cancel')}
         </button>
         <button type="submit" disabled={saving || uploading} className={primaryBtn}>
-          {saving ? 'Сохранение...' : product ? 'Сохранить' : 'Добавить товар'}
+          {saving ? t('common.saving') : product ? t('common.save') : t('products.add')}
         </button>
       </div>
     </form>

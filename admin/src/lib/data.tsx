@@ -21,6 +21,7 @@ import {
   type SiteSettings,
   type SiteSettingsRow,
 } from '../../../shared/siteSettings'
+import { tr } from '../i18n'
 import type { Order } from './orders'
 
 export type { Order, OrderStatus } from './orders'
@@ -83,9 +84,9 @@ function describe(error: { message: string; code?: string } | null): string | nu
   if (!error) return null
   console.error(error)
   if (error.code === '42501' || /row-level security|permission/i.test(error.message))
-    return 'Нет прав. Войдите заново под аккаунтом администратора.'
-  if (/fetch|network/i.test(error.message)) return 'Нет связи с сервером. Проверьте интернет.'
-  return `Ошибка: ${error.message}`
+    return tr('error.noRights')
+  if (/fetch|network/i.test(error.message)) return tr('error.network')
+  return tr('error.generic', { message: error.message })
 }
 
 export function AdminDataProvider({ children }: { children: ReactNode }) {
@@ -200,7 +201,7 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
     const { error } = await db.storage
       .from(PRODUCT_IMAGES_BUCKET)
       .upload(path, file, { contentType: 'image/jpeg', cacheControl: '31536000' })
-    if (error) return { error: describe(error) ?? 'Ошибка загрузки' }
+    if (error) return { error: describe(error) ?? tr('error.upload') }
     return { url: db.storage.from(PRODUCT_IMAGES_BUCKET).getPublicUrl(path).data.publicUrl }
   }
 

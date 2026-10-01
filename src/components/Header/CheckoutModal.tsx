@@ -2,6 +2,8 @@ import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import { CheckCircle2, X } from 'lucide-react'
 import { useCart } from '../../context/CartContext'
 import { getClientInfo } from '../../utils/device'
+import { colorLabel, sizeLabel } from '../../../shared/dataLabels'
+import { tr, useT } from '../../i18n'
 
 // "Оформить заказ": mijoz ma'lumotlari -> api/order.ts -> admin paneldagi "Заказы" (+ Telegram).
 // Narx serverda qayta hisoblanadi, bu yerdagi summa faqat ko'rsatish uchun.
@@ -13,13 +15,13 @@ const empty: Form = { name: '', phone: '+998 ', email: '', address: '', comment:
 
 function validate(f: Form): Errors {
   const errors: Errors = {}
-  if (f.name.trim().length < 2) errors.name = 'Укажите имя'
+  if (f.name.trim().length < 2) errors.name = tr('checkout.errName')
   const digits = f.phone.replace(/\D/g, '')
   if (digits.length < 9 || digits.length > 15 || !/^[+\d\s()-]+$/.test(f.phone.trim()))
-    errors.phone = 'Укажите номер, например +998 90 123 45 67'
+    errors.phone = tr('checkout.errPhone')
   if (f.email.trim() && !/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(f.email.trim()))
-    errors.email = 'Некорректный email'
-  if (f.address.trim().length < 5) errors.address = 'Укажите адрес доставки'
+    errors.email = tr('checkout.errEmail')
+  if (f.address.trim().length < 5) errors.address = tr('checkout.errAddress')
   return errors
 }
 
@@ -46,6 +48,7 @@ function Field({
 
 function CheckoutModal({ onClose }: { onClose: () => void }) {
   const { items, total, clearCart } = useCart()
+  const { t, lang } = useT()
   const [form, setForm] = useState<Form>(empty)
   const [errors, setErrors] = useState<Errors>({})
   const [serverError, setServerError] = useState('')
@@ -96,14 +99,14 @@ function CheckoutModal({ onClose }: { onClose: () => void }) {
         }),
       })
       const data = await res.json().catch(() => ({}))
-      if (!res.ok) throw new Error(data.error || 'Не удалось оформить заказ. Попробуйте ещё раз.')
+      if (!res.ok) throw new Error(data.error || t('checkout.failed'))
       setOrderId(data.id)
       clearCart()
     } catch (err) {
       setServerError(
         err instanceof Error && err.message !== 'Failed to fetch'
           ? err.message
-          : 'Нет связи с сервером. Попробуйте ещё раз.',
+          : t('checkout.network'),
       )
     } finally {
       setSending(false)
@@ -115,12 +118,12 @@ function CheckoutModal({ onClose }: { onClose: () => void }) {
       <div className="absolute inset-0 animate-[fade-in_200ms_ease-out] bg-black/50" onClick={onClose} />
       <div
         role="dialog"
-        aria-label="Оформление заказа"
+        aria-label={t('checkout.title')}
         className="relative max-h-[92vh] w-full max-w-lg animate-[zoom-in_200ms_ease-out] overflow-y-auto rounded-xl bg-white shadow-2xl"
       >
         <button
           type="button"
-          aria-label="Закрыть"
+          aria-label={t('common.close')}
           onClick={onClose}
           className="absolute top-3 right-3 cursor-pointer rounded-md p-1.5 text-gray-500 transition hover:bg-gray-100 hover:text-black"
         >
@@ -130,22 +133,23 @@ function CheckoutModal({ onClose }: { onClose: () => void }) {
         {orderId !== null ? (
           <div className="flex flex-col items-center px-6 py-12 text-center">
             <CheckCircle2 className="mb-4 size-14 text-green-500" strokeWidth={1.5} />
-            <h2 className="text-xl font-medium text-gray-950">Заказ №{orderId} принят!</h2>
+            <h2 className="text-xl font-medium text-gray-950">{t('checkout.accepted', { id: orderId })}</h2>
             <p className="mt-2 max-w-xs text-sm text-gray-500">
-              Мы свяжемся с вами по телефону <b className="text-gray-700">{form.phone}</b> для
-              подтверждения.
+              {t('checkout.willCall').split(/(\{phone\})/).map((part, i) =>
+                part === '{phone}' ? <b key={i} className="text-gray-700">{form.phone}</b> : part,
+              )}
             </p>
             <button
               type="button"
               onClick={onClose}
               className="mt-6 h-10 cursor-pointer rounded-md bg-gray-950 px-5 text-sm font-semibold text-white transition hover:bg-gray-800"
             >
-              Продолжить покупки
+              {t('common.continueShopping')}
             </button>
           </div>
         ) : (
           <form onSubmit={submit} noValidate className="flex flex-col gap-4 p-6">
-            <h2 className="text-xl font-medium text-gray-950">Оформление заказа</h2>
+            <h2 className="text-xl font-medium text-gray-950">{t('checkout.title')}</h2>
 
             <input
               type="text"
@@ -158,7 +162,7 @@ function CheckoutModal({ onClose }: { onClose: () => void }) {
               className="absolute -left-[9999px] size-px opacity-0"
             />
 
-            <Field label="Имя и фамилия *" error={errors.name}>
+            <Field label={t('checkout.name')} error={errors.name}>
               <input
                 autoFocus
                 autoComplete="name"
@@ -168,7 +172,7 @@ function CheckoutModal({ onClose }: { onClose: () => void }) {
               />
             </Field>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Field label="Телефон *" error={errors.phone}>
+              <Field label={t('checkout.phone')} error={errors.phone}>
                 <input
                   type="tel"
                   autoComplete="tel"
@@ -177,7 +181,7 @@ function CheckoutModal({ onClose }: { onClose: () => void }) {
                   className={`${inputClass} ${errors.phone ? 'border-red-400' : 'border-gray-300'}`}
                 />
               </Field>
-              <Field label="Email (необязательно)" error={errors.email}>
+              <Field label={t('checkout.email')} error={errors.email}>
                 <input
                   type="email"
                   autoComplete="email"
@@ -187,16 +191,16 @@ function CheckoutModal({ onClose }: { onClose: () => void }) {
                 />
               </Field>
             </div>
-            <Field label="Адрес доставки *" error={errors.address}>
+            <Field label={t('checkout.address')} error={errors.address}>
               <input
                 autoComplete="street-address"
-                placeholder="Город, улица, дом, квартира"
+                placeholder={t('checkout.addressPlaceholder')}
                 value={form.address}
                 onChange={(e) => set('address')(e.target.value)}
                 className={`${inputClass} ${errors.address ? 'border-red-400' : 'border-gray-300'}`}
               />
             </Field>
-            <Field label="Комментарий">
+            <Field label={t('checkout.comment')}>
               <textarea
                 rows={2}
                 value={form.comment}
@@ -213,7 +217,7 @@ function CheckoutModal({ onClose }: { onClose: () => void }) {
                       {i.product.name}
                       <span className="text-gray-400">
                         {' '}
-                        — {i.size}, {i.color} × {i.quantity}
+                        — {sizeLabel(lang, i.size)}, {colorLabel(lang, i.color)} × {i.quantity}
                       </span>
                     </span>
                     <span className="shrink-0">${(i.price * i.quantity).toFixed(2)}</span>
@@ -221,7 +225,7 @@ function CheckoutModal({ onClose }: { onClose: () => void }) {
                 ))}
               </ul>
               <div className="mt-2 flex justify-between border-t border-gray-200 pt-2 font-medium text-gray-950">
-                <span>Итого</span>
+                <span>{t('common.total')}</span>
                 <span>${total.toFixed(2)}</span>
               </div>
             </div>
@@ -242,10 +246,10 @@ function CheckoutModal({ onClose }: { onClose: () => void }) {
                   : 'cursor-pointer bg-gray-950 hover:bg-gray-800'
               }`}
             >
-              {sending ? 'Отправка...' : `Подтвердить заказ · $${total.toFixed(2)}`}
+              {sending ? t('common.sending') : t('checkout.confirm', { total: total.toFixed(2) })}
             </button>
             <p className="text-center text-xs text-gray-400">
-              Оплата при получении. Мы позвоним для подтверждения.
+              {t('checkout.payment')}
             </p>
           </form>
         )}

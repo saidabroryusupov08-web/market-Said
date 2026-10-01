@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { Camera, ShieldCheck, ShieldOff, Smartphone, Trash2 } from 'lucide-react'
 import { profileOf, useAuth, type TotpEnrollment } from '../lib/auth'
+import { useT } from '../i18n'
 import { useAdminData } from '../lib/data'
 import { resizeImage } from '../lib/image'
 import { validatePassword } from '../lib/password'
@@ -14,6 +15,7 @@ import { inputClass, labelClass, primaryBtn, secondaryBtn } from './styles'
 function ChangePassword() {
   const { changePassword } = useAuth()
   const showToast = useToast()
+  const { t } = useT()
   const [current, setCurrent] = useState('')
   const [next, setNext] = useState('')
   const [confirm, setConfirm] = useState('')
@@ -22,7 +24,7 @@ function ChangePassword() {
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
-    if (!current) return setError('Введите текущий пароль')
+    if (!current) return setError(t('security.enterCurrent'))
     const problem = validatePassword(next, confirm)
     if (problem) return setError(problem)
     setBusy(true)
@@ -32,7 +34,7 @@ function ChangePassword() {
     setCurrent('')
     setNext('')
     setConfirm('')
-    showToast('Пароль изменён')
+    showToast(t('security.passwordChanged'))
   }
 
   const clear = <T,>(setter: (v: T) => void) => (v: T) => {
@@ -42,10 +44,10 @@ function ChangePassword() {
 
   return (
     <form onSubmit={submit} noValidate className="flex flex-col gap-3">
-      <h3 className="text-sm font-semibold text-gray-950">Сменить пароль</h3>
+      <h3 className="text-sm font-semibold text-gray-950">{t('security.changePassword')}</h3>
       <div>
         <label className={labelClass} htmlFor="current-password">
-          Текущий пароль
+          {t('security.currentPassword')}
         </label>
         <PasswordInput
           id="current-password"
@@ -57,7 +59,7 @@ function ChangePassword() {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div>
           <label className={labelClass} htmlFor="next-password">
-            Новый пароль
+            {t('login.newPassword')}
           </label>
           <PasswordInput
             id="next-password"
@@ -68,7 +70,7 @@ function ChangePassword() {
         </div>
         <div>
           <label className={labelClass} htmlFor="confirm-next-password">
-            Повторите новый
+            {t('security.repeatNew')}
           </label>
           <PasswordInput
             id="confirm-next-password"
@@ -78,14 +80,14 @@ function ChangePassword() {
           />
         </div>
       </div>
-      <p className="text-xs text-gray-400">Минимум 8 символов, буквы и цифры.</p>
+      <p className="text-xs text-gray-400">{t('security.passwordRule')}</p>
       {error && (
         <p role="alert" className="text-xs text-red-600">
           {error}
         </p>
       )}
       <button type="submit" disabled={busy} className={`${primaryBtn} self-start`}>
-        {busy ? 'Сохранение...' : 'Изменить пароль'}
+        {busy ? t('common.saving') : t('security.changePasswordBtn')}
       </button>
     </form>
   )
@@ -94,6 +96,7 @@ function ChangePassword() {
 function TwoFactor({ enabled }: { enabled: boolean }) {
   const { startTotpEnrollment, confirmTotpEnrollment, disableTotp } = useAuth()
   const showToast = useToast()
+  const { t } = useT()
   const [enrollment, setEnrollment] = useState<TotpEnrollment | null>(null)
   const [code, setCode] = useState('')
   const [error, setError] = useState('')
@@ -111,7 +114,7 @@ function TwoFactor({ enabled }: { enabled: boolean }) {
   const verify = async (e: FormEvent) => {
     e.preventDefault()
     if (!enrollment) return
-    if (code.length !== 6) return setError('Введите 6 цифр из приложения')
+    if (code.length !== 6) return setError(t('login.enterCode'))
     setBusy(true)
     const failed = await confirmTotpEnrollment(enrollment.factorId, code)
     setBusy(false)
@@ -122,7 +125,7 @@ function TwoFactor({ enabled }: { enabled: boolean }) {
     }
     setEnrollment(null)
     setCode('')
-    showToast('Двухфакторная защита включена')
+    showToast(t('security.mfaEnabled'))
   }
 
   const turnOff = async () => {
@@ -130,25 +133,23 @@ function TwoFactor({ enabled }: { enabled: boolean }) {
     setBusy(true)
     const failed = await disableTotp()
     setBusy(false)
-    showToast(failed ?? 'Двухфакторная защита отключена', failed ? 'error' : 'success')
+    showToast(failed ?? t('security.mfaDisabled'), failed ? 'error' : 'success')
   }
 
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-3">
-        <h3 className="text-sm font-semibold text-gray-950">Двухфакторная защита (2FA)</h3>
+        <h3 className="text-sm font-semibold text-gray-950">{t('security.mfaTitle')}</h3>
         <span
           className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
             enabled ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'
           }`}
         >
-          {enabled ? 'Включена' : 'Выключена'}
+          {enabled ? t('security.on') : t('security.off')}
         </span>
       </div>
       <p className="text-xs text-gray-500">
-        При входе кроме пароля нужен 6-значный код из приложения на телефоне (Google
-        Authenticator, Microsoft Authenticator и др.). Даже если пароль украдут, без телефона войти
-        не получится.
+        {t('security.mfaExplain')}
       </p>
 
       {enabled ? (
@@ -159,23 +160,23 @@ function TwoFactor({ enabled }: { enabled: boolean }) {
           className={`${secondaryBtn} self-start text-red-600 hover:bg-red-50`}
         >
           <ShieldOff className="size-4" />
-          Отключить 2FA
+          {t('security.mfaDisable')}
         </button>
       ) : enrollment ? (
         <form onSubmit={verify} noValidate className="flex flex-col gap-3 rounded-lg bg-gray-50 p-4">
           <ol className="list-decimal space-y-1 pl-4 text-xs text-gray-600">
-            <li>Установите Google Authenticator на телефон.</li>
-            <li>Нажмите «+» → «Сканировать QR-код» и наведите на код ниже.</li>
-            <li>Введите 6 цифр, которые покажет приложение.</li>
+            <li>{t('security.mfaStep1')}</li>
+            <li>{t('security.mfaStep2')}</li>
+            <li>{t('security.mfaStep3')}</li>
           </ol>
           <div className="flex flex-col items-center gap-2 sm:flex-row sm:items-start">
             <img
               src={enrollment.qrCode}
-              alt="QR-код для приложения"
+              alt={t('security.qrAlt')}
               className="size-40 shrink-0 rounded-lg border border-gray-200 bg-white p-2"
             />
             <div className="min-w-0 text-xs text-gray-500">
-              Не получается сканировать? Введите ключ вручную:
+              {t('security.manualKey')}
               <code className="mt-1 block rounded bg-white px-2 py-1.5 font-mono text-[11px] break-all text-gray-950 select-all">
                 {enrollment.secret}
               </code>
@@ -195,25 +196,25 @@ function TwoFactor({ enabled }: { enabled: boolean }) {
           )}
           <div className="flex gap-2">
             <button type="submit" disabled={busy} className={primaryBtn}>
-              {busy ? 'Проверка...' : 'Подтвердить и включить'}
+              {busy ? t('common.checking') : t('security.confirmEnable')}
             </button>
             <button type="button" onClick={() => setEnrollment(null)} className={`${secondaryBtn} h-10`}>
-              Отмена
+              {t('common.cancel')}
             </button>
           </div>
         </form>
       ) : (
         <button type="button" disabled={busy} onClick={start} className={`${secondaryBtn} self-start`}>
           <Smartphone className="size-4" />
-          {busy ? 'Подготовка...' : 'Включить 2FA'}
+          {busy ? t('security.preparing') : t('security.mfaEnable')}
         </button>
       )}
 
       {confirmOff && (
         <ConfirmDialog
           withPassword
-          message="Отключить двухфакторную защиту? Для входа снова будет достаточно только пароля."
-          confirmLabel="Да, отключить"
+          message={t('security.mfaDisableConfirm')}
+          confirmLabel={t('security.mfaDisableYes')}
           onConfirm={turnOff}
           onCancel={() => setConfirmOff(false)}
         />
@@ -229,6 +230,7 @@ function Profile({ session }: { session: Session }) {
   const { updateProfile } = useAuth()
   const { uploadImage, removeImage } = useAdminData()
   const showToast = useToast()
+  const { t } = useT()
   const current = profileOf(session)
   const [name, setName] = useState(current.name)
   // undefined — o'zgarmagan, null — o'chiriladi, Blob — yangi rasm
@@ -245,13 +247,13 @@ function Profile({ session }: { session: Session }) {
 
   const pick = async (file?: File) => {
     if (!file) return
-    if (!file.type.startsWith('image/')) return showToast('Выберите файл изображения', 'error')
+    if (!file.type.startsWith('image/')) return showToast(t('common.pickImage'), 'error')
     try {
       const blob = await resizeImage(file, 256, true)
       setPending(blob)
       setPreview(URL.createObjectURL(blob))
     } catch {
-      showToast('Не удалось прочитать изображение', 'error')
+      showToast(t('common.imageReadFailed'), 'error')
     }
   }
 
@@ -278,18 +280,18 @@ function Profile({ session }: { session: Session }) {
     // eski rasm Storage'da keraksiz qolmasin
     if (current.avatarUrl && current.avatarUrl !== avatarUrl) await removeImage(current.avatarUrl)
     setPending(undefined)
-    showToast('Профиль сохранён')
+    showToast(t('profile.saved'))
   }
 
   return (
     <form onSubmit={save} noValidate className="flex flex-col gap-3">
-      <h3 className="text-sm font-semibold text-gray-950">Профиль</h3>
+      <h3 className="text-sm font-semibold text-gray-950">{t('profile.title')}</h3>
       <div className="flex items-center gap-4">
         <Avatar src={preview} name={name || current.email} className="size-16 text-xl" />
         <div className="flex flex-wrap gap-2">
           <label className={`${secondaryBtn} h-8 text-xs`}>
             <Camera className="size-3.5" />
-            {preview ? 'Заменить фото' : 'Загрузить фото'}
+            {preview ? t('profile.replacePhoto') : t('profile.uploadPhoto')}
             <input
               type="file"
               accept="image/*"
@@ -310,19 +312,19 @@ function Profile({ session }: { session: Session }) {
               className={`${secondaryBtn} h-8 text-xs text-red-600 hover:bg-red-50`}
             >
               <Trash2 className="size-3.5" />
-              Удалить фото
+              {t('profile.removePhoto')}
             </button>
           )}
         </div>
       </div>
       <div>
         <label className={labelClass} htmlFor="profile-name">
-          Имя (показывается в меню и на главной)
+          {t('profile.nameLabel')}
         </label>
         <input
           id="profile-name"
           maxLength={NAME_MAX}
-          placeholder="Например: Саидаброр"
+          placeholder={t('profile.namePlaceholder')}
           value={name}
           onChange={(e) => setName(e.target.value)}
           className={inputClass}
@@ -333,7 +335,7 @@ function Profile({ session }: { session: Session }) {
         {current.email}
       </p>
       <button type="submit" disabled={!changed || saving} className={`${primaryBtn} self-start`}>
-        {saving ? 'Сохранение...' : 'Сохранить профиль'}
+        {saving ? t('common.saving') : t('profile.save')}
       </button>
     </form>
   )
@@ -341,10 +343,11 @@ function Profile({ session }: { session: Session }) {
 
 function SecurityModal({ onClose }: { onClose: () => void }) {
   const { state } = useAuth()
+  const { t } = useT()
   if (state.status !== 'admin') return null
 
   return (
-    <Modal title="Профиль и безопасность" onClose={onClose} width="max-w-lg">
+    <Modal title={t('security.modalTitle')} onClose={onClose} width="max-w-lg">
       <div className="flex flex-col gap-6 p-5">
         <Profile session={state.session} />
         <div className="border-t border-gray-100" />
@@ -352,7 +355,7 @@ function SecurityModal({ onClose }: { onClose: () => void }) {
         <div className="border-t border-gray-100" />
         <TwoFactor enabled={state.mfaEnabled} />
         <p className="border-t border-gray-100 pt-4 text-xs text-gray-400">
-          Если не пользоваться панелью 30 минут, выход произойдёт автоматически.
+          {t('security.autoLogout')}
         </p>
       </div>
     </Modal>

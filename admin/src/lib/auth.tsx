@@ -119,6 +119,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase ? { status: 'loading' } : { status: 'not-configured' },
   )
   const noticeRef = useRef<string | undefined>(undefined)
+  // parol to'g'ri kiritilgan vaqt (muhim amallar uchun 5 daqiqalik "ishonch")
+  const lastVerifiedRef = useRef(0)
 
   const refresh = useCallback(async () => {
     if (!supabase) return
@@ -126,6 +128,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const next = await resolveState(data.session)
     const notice = noticeRef.current
     noticeRef.current = undefined
+    // boshqa tabda chiqilgan yoki sessiya tugagan bo'lsa ham "ishonch" bekor bo'ladi
+    if (next.status !== 'admin') lastVerifiedRef.current = 0
     setState((prev) => {
       if (next.status !== 'signed-out') return next
       // chiqish sababi ("сессия истекла") keyingi hodisalarda yo'qolib qolmasligi uchun
@@ -163,6 +167,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [refresh])
 
   const signOut = useCallback(async (notice?: string) => {
+    // chiqqanda "ishonch" bekor bo'ladi: keyingi kirgan odamdan parol yana so'raladi
+    lastVerifiedRef.current = 0
     // scope 'local': faqat shu brauzerdan chiqiladi
     await supabase?.auth.signOut({ scope: 'local' })
     setState({ status: 'signed-out', notice })
@@ -173,12 +179,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!isAdmin) return
     let last = Date.now()
+    let lastWritten = last
     writeLastActivity(last)
     const onActivity = () => {
       const now = Date.now()
-      // localStorage'ga har harakatda emas, 15 soniyada bir yoziladi
-      if (now - last > 15_000) writeLastActivity(now)
       last = now
+      // localStorage'ga har harakatda emas, oxirgi YOZUVDAN 15 soniya o'tgach yoziladi
+      // (oxirgi harakatdan emas: aks holda uzluksiz ishlaganda hech qachon yozilmay,
+      // sahifa yangilanganda faol admin "harakatsiz" deb chiqarib yuborilardi)
+      if (now - lastWritten > 15_000) {
+        writeLastActivity(now)
+        lastWritten = now
+      }
     }
     const events = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart'] as const
     events.forEach((e) => window.addEventListener(e, onActivity, { passive: true }))
@@ -200,6 +212,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (!error) {
       writeLastActivity(Date.now())
+      lastVerifiedRef.current = 0
       return null
     }
     if (error.status === 400) return 'Неверный email или пароль'
@@ -239,7 +252,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ----- parolni qayta tekshirish (muhim amallardan oldin) -----
   // Parol alohida, vaqtinchalik ulanish orqali tekshiriladi: asosiy sessiya (va uning 2FA
   // darajasi) o'zgarmaydi. To'g'ri kiritilsa, keyingi REAUTH_GRACE_MS davomida qayta so'ralmaydi.
-  const lastVerifiedRef = useRef(0)
   const verifyPassword = async (password: string) => {
     if (state.status !== 'admin') return 'Нет доступа'
     const verifier = createClient(supabaseUrl!, supabaseAnonKey!, {

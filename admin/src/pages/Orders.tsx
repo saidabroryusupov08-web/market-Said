@@ -256,7 +256,7 @@ function Orders() {
 
   return (
     <div>
-      <div className="mb-4 flex gap-1 overflow-x-auto border-b border-gray-200">
+      <div className="mb-4 flex gap-1 overflow-x-auto overflow-y-hidden border-b border-gray-200 [scrollbar-width:none]">
         {tabs.map((t) => (
           <button
             key={t.value ?? 'all'}
@@ -326,7 +326,7 @@ function Orders() {
                 <tr
                   key={o.id}
                   onClick={() => updateParam('id', String(o.id))}
-                  className={`cursor-pointer transition hover:bg-gray-50 ${o.status === 'new' ? 'bg-red-50/50' : ''}`}
+                  className={`cursor-pointer transition hover:bg-gray-50 ${o.status === 'new' ? 'bg-rose-50/40' : ''}`}
                 >
                   <td className="px-4 py-3 font-semibold text-gray-950">#{o.id}</td>
                   <td className="px-4 py-3 whitespace-nowrap text-gray-500">{formatDateTime(o.created_at)}</td>

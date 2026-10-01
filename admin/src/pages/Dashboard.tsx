@@ -18,6 +18,7 @@ import { useAdminData } from '../lib/data'
 import { StatusBadge } from './Orders'
 import Avatar from '../components/Avatar'
 import HeroEditor from '../components/HeroEditor'
+import OpenStoreButton from '../components/OpenStoreButton'
 import { useToast } from '../components/ui'
 import { primaryBtn, secondaryBtn } from '../components/styles'
 
@@ -47,7 +48,7 @@ function StatCard({
         <p className="text-sm text-gray-500">{label}</p>
         <span
           className={`flex size-8 items-center justify-center rounded-lg ${
-            accent ? 'bg-red-50 text-red-600' : 'bg-gray-100 text-gray-600'
+            accent ? 'bg-rose-50 text-rose-500' : 'bg-gray-100 text-gray-600'
           }`}
         >
           <Icon className="size-4" />
@@ -59,7 +60,6 @@ function StatCard({
   )
 }
 
-const STORE_URL = (import.meta.env.VITE_STORE_URL as string | undefined) || ''
 
 function greeting(hour: number) {
   if (hour < 5) return 'Доброй ночи'
@@ -85,12 +85,10 @@ function SiteHeroCard() {
         <p className="line-clamp-2 text-sm text-gray-500">{siteSettings.heroSubtitle}</p>
       </div>
       <div className="flex shrink-0 gap-2">
-        {STORE_URL && (
-          <a href={STORE_URL} target="_blank" rel="noopener noreferrer" className={secondaryBtn}>
-            <ExternalLink className="size-4" />
-            Открыть
-          </a>
-        )}
+        <OpenStoreButton className={secondaryBtn}>
+          <ExternalLink className="size-4" />
+          Открыть
+        </OpenStoreButton>
         <button type="button" onClick={() => setEditing(true)} className={primaryBtn}>
           <Pencil className="size-4" />
           Изменить фото и текст
@@ -267,7 +265,7 @@ function Dashboard() {
                     className="flex items-center gap-3 px-5 py-3 transition hover:bg-gray-50"
                   >
                     <span
-                      className={`size-2 shrink-0 rounded-full ${m.is_read ? 'bg-transparent' : 'bg-red-500'}`}
+                      className={`size-2 shrink-0 rounded-full ${m.is_read ? 'bg-transparent' : 'bg-rose-400'}`}
                     />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm font-medium text-gray-950">

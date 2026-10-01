@@ -18,11 +18,10 @@ import { profileOf, useAuth } from '../lib/auth'
 import { useAdminData } from '../lib/data'
 import Avatar from './Avatar'
 import GlobalSearch from './GlobalSearch'
+import OpenStoreButton from './OpenStoreButton'
 import SecurityModal from './SecurityModal'
 import { alertBadge, glassActive, glassBadge, iconBtn } from './styles'
 
-// do'kon manzili (Vercel env: VITE_STORE_URL), menyudagi "Открыть магазин" uchun
-const STORE_URL = (import.meta.env.VITE_STORE_URL as string | undefined) || ''
 
 function Sidebar({
   onNavigate,
@@ -95,17 +94,10 @@ function Sidebar({
           ))}
         </ul>
 
-        {STORE_URL && (
-          <a
-            href={STORE_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-4 flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-gray-500 transition hover:bg-gray-100 hover:text-gray-950"
-          >
-            <ExternalLink className="size-4" />
-            Открыть магазин
-          </a>
-        )}
+        <OpenStoreButton className="mt-4 flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-left text-sm text-gray-500 transition hover:bg-gray-100 hover:text-gray-950">
+          <ExternalLink className="size-4" />
+          Открыть магазин
+        </OpenStoreButton>
       </nav>
 
       <div className="border-t border-gray-200 p-3">

@@ -59,13 +59,13 @@ function MessageCard({
   return (
     <li
       className={`rounded-xl border bg-white p-4 transition sm:p-5 ${
-        m.is_read ? 'border-gray-200' : 'border-red-200 bg-red-50/30 shadow-[0_0_0_3px_rgba(239,68,68,0.08)]'
+        m.is_read ? 'border-gray-200' : 'border-rose-200 bg-rose-50/40'
       }`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            {!m.is_read && <span className="size-2 shrink-0 rounded-full bg-red-500" />}
+            {!m.is_read && <span className="size-2 shrink-0 rounded-full bg-rose-400" />}
             <span className="rounded-md bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-600">
               {m.type === 'subscribe' ? 'Подписка' : m.type}
             </span>

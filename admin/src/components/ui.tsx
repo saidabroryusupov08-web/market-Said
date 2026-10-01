@@ -7,7 +7,7 @@ import {
   type FormEvent,
   type ReactNode,
 } from 'react'
-import { AlertTriangle, CheckCircle2, Lock, X, XCircle } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, ExternalLink, Lock, X, XCircle } from 'lucide-react'
 import { useAuth } from '../lib/auth'
 import PasswordInput from './PasswordInput'
 import { iconBtn, secondaryBtn } from './styles'
@@ -108,19 +108,27 @@ export function Modal({
 // ---------- o'chirishni tasdiqlash ----------
 // withPassword: muhim amal (o'chirish, 2FA'ni o'chirish) — parol qayta so'raladi.
 // Oxirgi 5 daqiqada parol to'g'ri kiritilgan bo'lsa, qayta so'ralmaydi (auth.tsx: REAUTH_GRACE_MS).
+// tone 'info': xavfsiz amal (masalan saytga o'tish) — qizil emas, ko'k ko'rinish
 export function ConfirmDialog({
   message,
   confirmLabel = 'Да, удалить',
+  cancelLabel = 'Отмена',
+  title = 'Подтверждение',
   onConfirm,
   onCancel,
   withPassword = false,
+  tone = 'danger',
 }: {
   message: string
   confirmLabel?: string
+  cancelLabel?: string
+  title?: string
   onConfirm: () => void
   onCancel: () => void
   withPassword?: boolean
+  tone?: 'danger' | 'info'
 }) {
+  const danger = tone === 'danger'
   const { verifyPassword, needsPassword } = useAuth()
   // oyna ochilgan paytdagi holat: keyin taymer o'tib ketsa ham forma o'zgarmaydi
   const [askPassword] = useState(() => withPassword && needsPassword())
@@ -149,15 +157,15 @@ export function ConfirmDialog({
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4" onClick={onCancel}>
       <form
         role="alertdialog"
-        aria-label="Подтверждение"
+        aria-label={title}
         onSubmit={confirm}
         noValidate
         className="w-full max-w-sm animate-[zoom-in_150ms_ease-out] rounded-xl bg-white p-5 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="mb-3 flex items-center gap-2.5 text-red-600">
-          <AlertTriangle className="size-5" />
-          <h3 className="text-base font-semibold text-gray-950">Подтверждение</h3>
+        <div className={`mb-3 flex items-center gap-2.5 ${danger ? 'text-red-600' : 'text-blue-600'}`}>
+          {danger ? <AlertTriangle className="size-5" /> : <ExternalLink className="size-5" />}
+          <h3 className="text-base font-semibold text-gray-950">{title}</h3>
         </div>
         <p className="mb-4 text-sm text-gray-600">{message}</p>
         {askPassword && (
@@ -189,13 +197,15 @@ export function ConfirmDialog({
         )}
         <div className="flex justify-end gap-2">
           <button type="button" onClick={onCancel} className={secondaryBtn}>
-            Отмена
+            {cancelLabel}
           </button>
           <button
             type="submit"
             autoFocus={!askPassword}
             disabled={checking}
-            className="h-9 cursor-pointer rounded-lg bg-red-600 px-3.5 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+            className={`h-9 cursor-pointer rounded-lg px-3.5 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60 ${
+              danger ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'
+            }`}
           >
             {checking ? 'Проверка...' : confirmLabel}
           </button>

@@ -17,5 +17,5 @@ export const glassActive =
 export const glassChip = 'border-blue-500/40 bg-blue-600/10 text-blue-800 backdrop-blur-sm'
 // ADMIN belgisi
 export const glassBadge = 'bg-blue-600/15 text-blue-700 ring-1 ring-inset ring-blue-600/30 backdrop-blur-sm'
-// ko'rilmagan yangi buyurtma/xabar soni — qizil, telefondagi bildirishnoma kabi
-export const alertBadge = 'bg-red-500 text-white shadow-[0_0_0_2px_rgba(255,255,255,0.9)]'
+// ko'rilmagan yangi buyurtma/xabar soni — yumshoq qizil (to'q emas), ko'zga tashlanadi lekin baqirmaydi
+export const alertBadge = 'bg-rose-100 text-rose-700 ring-1 ring-inset ring-rose-200'

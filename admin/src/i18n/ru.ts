@@ -179,6 +179,8 @@ const ru = {
   'login.invalidEmail': 'Введите корректный email',
   'login.notConfiguredText':
     'Добавьте переменные {url} и {key} в настройки Vercel (или в файл {file}) и перезапустите.',
+  'login.notReadyTitle': 'Админ-панель настраивается',
+  'login.notReadyText': 'Панель скоро заработает. Попробуйте открыть её немного позже.',
   'login.notAdmin': 'У аккаунта {email} нет прав администратора.',
   'login.otherAccount': 'Войти под другим аккаунтом',
   'login.checkMail': 'Проверьте почту',

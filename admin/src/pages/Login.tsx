@@ -94,6 +94,15 @@ export function CodeInput({
 export function NotConfigured() {
   const { t } = useT()
   const code = (text: string) => <code className="rounded bg-gray-100 px-1">{text}</code>
+  // internetda tashrifchiga texnik yo'riqnoma emas, oddiy xabar ko'rsatiladi
+  if (!/^(localhost|127\.0\.0\.1)$/.test(location.hostname))
+    return (
+      <Shell>
+        <ShieldAlert className="mb-3 size-6 text-amber-500" />
+        <h1 className="text-base font-semibold text-gray-950">{t('login.notReadyTitle')}</h1>
+        <p className="mt-2 text-sm text-gray-600">{t('login.notReadyText')}</p>
+      </Shell>
+    )
   return (
     <Shell>
       <ShieldAlert className="mb-3 size-6 text-amber-500" />

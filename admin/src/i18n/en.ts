@@ -179,6 +179,8 @@ const en: Dict = {
   'login.invalidEmail': 'Enter a valid email',
   'login.notConfiguredText':
     'Add the {url} and {key} variables to the Vercel settings (or to the {file} file) and restart.',
+  'login.notReadyTitle': 'The admin panel is being set up',
+  'login.notReadyText': 'It will be available shortly. Please try again a little later.',
   'login.notAdmin': 'The account {email} has no admin rights.',
   'login.otherAccount': 'Sign in with another account',
   'login.checkMail': 'Check your email',

@@ -179,6 +179,8 @@ const uz: Dict = {
   'login.invalidEmail': "To'g'ri email kiriting",
   'login.notConfiguredText':
     "{url} va {key} o'zgaruvchilarini Vercel sozlamalariga (yoki {file} fayliga) qo'shing va qayta ishga tushiring.",
+  'login.notReadyTitle': 'Admin panel sozlanmoqda',
+  'login.notReadyText': "Panel tez orada ishga tushadi. Birozdan keyin qayta ochib ko'ring.",
   'login.notAdmin': "{email} akkauntida administrator huquqi yo'q.",
   'login.otherAccount': 'Boshqa akkaunt bilan kirish',
   'login.checkMail': 'Pochtangizni tekshiring',

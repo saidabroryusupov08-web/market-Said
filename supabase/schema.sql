@@ -201,6 +201,34 @@ begin
 end;
 $$;
 
+-- add_stock: omborga kelgan tovar (faqat admin). Hisob yuritilmagan o'lcham shu sondan boshlanadi.
+-- Bazada qo'shiladi (o'qib-yozish emas) — shu payt kelgan buyurtma qoldig'i yo'qolmaydi.
+create or replace function public.add_stock(product_id bigint, amounts jsonb) returns jsonb
+  language plpgsql security definer set search_path = public
+as $$
+declare
+  k text;
+  result jsonb;
+begin
+  if not public.is_admin() then
+    raise exception 'forbidden' using errcode = '42501';
+  end if;
+  for k in select jsonb_object_keys(amounts) loop
+    if (amounts ->> k)::int < 0 or (amounts ->> k)::int > 99999 then
+      raise exception 'invalid amount' using errcode = '22023';
+    end if;
+    update public.products
+      set stock = jsonb_set(stock, array[k], to_jsonb(coalesce((stock ->> k)::int, 0) + (amounts ->> k)::int))
+      where id = product_id;
+  end loop;
+  select stock into result from public.products where id = product_id;
+  return result;
+end;
+$$;
+
+revoke all on function public.add_stock(bigint, jsonb) from public, anon;
+grant execute on function public.add_stock(bigint, jsonb) to authenticated;
+
 revoke all on function public.reserve_stock(jsonb) from public, anon;
 revoke all on function public.release_stock(jsonb) from public, anon;
 grant execute on function public.reserve_stock(jsonb) to authenticated, service_role;

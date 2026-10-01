@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import {
   BarChart3,
@@ -26,7 +26,7 @@ import GlobalSearch from './GlobalSearch'
 import OpenStoreButton from './OpenStoreButton'
 import SecurityModal from './SecurityModal'
 import { useToast } from './ui'
-import { alertBadge, glassActive, glassBadge, iconBtn } from './styles'
+import { alertBadge, glassBadge, iconBtn } from './styles'
 
 
 function Sidebar({
@@ -43,6 +43,27 @@ function Sidebar({
   const profile = state.status === 'admin' ? profileOf(state.session) : null
   const mfaEnabled = state.status === 'admin' && state.mfaEnabled
   const { t } = useT()
+  const { pathname } = useLocation()
+
+  // Faol bo'lim ostidagi shisha (blur) fon: bitta element, bo'lim almashganda yangi joyga
+  // silliq siljiydi. O'rni faol havoladan o'lchab olinadi.
+  const listRef = useRef<HTMLUListElement>(null)
+  const [pill, setPill] = useState<{ top: number; height: number } | null>(null)
+  useLayoutEffect(() => {
+    const list = listRef.current
+    if (!list) return
+    const measure = () => {
+      const active = list.querySelector<HTMLElement>('a[aria-current="page"]')
+      setPill(active ? { top: active.offsetTop, height: active.offsetHeight } : null)
+    }
+    const frame = requestAnimationFrame(measure)
+    const observer = new ResizeObserver(() => measure())
+    observer.observe(list)
+    return () => {
+      cancelAnimationFrame(frame)
+      observer.disconnect()
+    }
+  }, [pathname, t])
 
   const links = [
     { to: '/', label: t('nav.dashboard'), Icon: LayoutDashboard, badge: null },
@@ -55,16 +76,34 @@ function Sidebar({
   ]
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="flex h-16 items-center gap-2 px-5">
+    <div className="relative flex h-full flex-col overflow-hidden">
+      {/* shisha ortidagi yumshoq rangli dog'lar — blur orqali ko'rinib turadi */}
+      <span aria-hidden="true" className="pointer-events-none absolute top-20 -left-12 size-40 rounded-full bg-blue-400/25 blur-3xl" />
+      <span aria-hidden="true" className="pointer-events-none absolute top-60 -right-14 size-36 rounded-full bg-rose-400/20 blur-3xl" />
+      <div className="relative flex h-16 items-center gap-2 px-5">
         <Logo />
         <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold tracking-wide uppercase ${glassBadge}`}>
           Admin
         </span>
       </div>
 
-      <nav className="flex-1 px-3 py-2">
-        <ul className="flex flex-col gap-0.5">
+      <nav className="relative flex-1 px-3 py-2">
+        <ul ref={listRef} className="relative isolate flex flex-col gap-0.5">
+          {pill && (
+            <li
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-x-0 top-0 -z-10 transition-[transform,height] duration-300 ease-out motion-reduce:transition-none"
+              style={{ transform: `translateY(${pill.top}px)`, height: pill.height }}
+            >
+              <span
+                data-glass-pill
+                className="relative block size-full overflow-hidden rounded-xl bg-white/45 shadow-[inset_0_1px_1px_rgba(255,255,255,0.95),inset_0_-8px_14px_-10px_rgba(37,99,235,0.35),0_10px_24px_-12px_rgba(30,64,175,0.45),0_2px_6px_-3px_rgba(15,23,42,0.18)] ring-1 ring-white/80 backdrop-blur-xl backdrop-saturate-150 ring-inset"
+              >
+                {/* yuqoridagi yaltiroq chiziq — shisha qirrasi */}
+                <span className="absolute inset-x-3 top-px h-1/2 rounded-full bg-gradient-to-b from-white/90 to-white/0" />
+              </span>
+            </li>
+          )}
           {links.map(({ to, label, Icon, badge, highlight }) => (
             <li key={to}>
               <NavLink
@@ -72,10 +111,8 @@ function Sidebar({
                 end={to === '/'}
                 onClick={onNavigate}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition ${
-                    isActive
-                      ? glassActive
-                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-950'
+                  `flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors ${
+                    isActive ? 'text-gray-950' : 'text-gray-600 hover:bg-gray-900/[0.04] hover:text-gray-950'
                   }`
                 }
               >
@@ -110,7 +147,7 @@ function Sidebar({
         </OpenStoreButton>
       </nav>
 
-      <div className="border-t border-gray-200 p-3">
+      <div className="relative border-t border-gray-200/80 p-3">
         <div className="flex items-center gap-1">
           {/* profil: parol va 2FA sozlamalari */}
           <Tooltip label={t('nav.profileTitle')} side="top" align="start" className="min-w-0 flex-1">

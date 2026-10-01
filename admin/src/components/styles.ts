@@ -10,9 +10,6 @@ export const secondaryBtn =
 export const iconBtn =
   'flex size-8 cursor-pointer items-center justify-center rounded-lg text-gray-500 transition hover:bg-gray-100 hover:text-gray-950'
 
-// Tanlangan (faol) element: qora o'rniga rangli "shisha" (blur) — brendning ko'k-qizil tusi
-export const glassActive =
-  'bg-gradient-to-r from-blue-600/15 via-blue-500/10 to-rose-500/15 text-blue-950 ring-1 ring-inset ring-blue-500/25 backdrop-blur-md shadow-[0_6px_20px_-8px_rgba(29,78,216,0.45)]'
 // kichik tanlangan tugma/chip uchun
 export const glassChip = 'border-blue-500/40 bg-blue-600/10 text-blue-800 backdrop-blur-sm'
 // ADMIN belgisi: rangsiz "shisha" (oq, yarim shaffof, blur)

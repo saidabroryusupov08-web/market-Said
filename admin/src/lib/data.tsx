@@ -72,6 +72,8 @@ type AdminDataValue = {
   updateOrder: (id: number, changes: Partial<Pick<Order, 'status' | 'admin_note'>>) => Result
   // ombordagi qoldiqni qo'lda belgilash (o'lcham -> dona)
   saveStock: (id: number, stock: Record<string, number>) => Result
+  // omborga kelgan tovar: o'lcham -> necha dona qo'shiladi (bazada atomik qo'shiladi)
+  addStock: (id: number, amounts: Record<string, number>) => Result
   deleteOrder: (id: number) => Result
   siteSettings: SiteSettings
   saveSiteSettings: (next: SiteSettings) => Result
@@ -300,6 +302,13 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
     return null
   }
 
+  const addStock = async (id: number, amounts: Record<string, number>) => {
+    const { data, error } = await db.rpc('add_stock', { product_id: id, amounts })
+    if (error) return describe(error)
+    setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, stock: (data as Record<string, number>) ?? p.stock } : p)))
+    return null
+  }
+
   // ----- sayt bosh sahifasi -----
   const saveSiteSettings = async (next: SiteSettings) => {
     const { error } = await db.from('site_settings').update(settingsToRow(next)).eq('id', 1)
@@ -332,6 +341,7 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
         newOrders: orders.filter((o) => o.status === 'new').length,
         updateOrder,
         saveStock,
+        addStock,
         siteSettings,
         saveSiteSettings,
         deleteOrder,

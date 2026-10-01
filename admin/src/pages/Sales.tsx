@@ -1,11 +1,11 @@
 import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { Boxes, Download, ImageIcon, PackageCheck, Receipt, Search, Wallet } from 'lucide-react'
+import { ArrowDownRight, ArrowUpRight, Download, ImageIcon, Minus, PackageCheck, Search } from 'lucide-react'
 import { categoryLabel, colorLabel, sizeLabel } from '../../../shared/dataLabels'
 import { resolveImage } from '../../../shared/images'
 import { createMatcher } from '../../../shared/search'
 import { useT } from '../i18n'
-import { money, OTHER_CATEGORY } from '../lib/analytics'
+import { changePercent, money, OTHER_CATEGORY } from '../lib/analytics'
 import { useAdminData } from '../lib/data'
 import { formatDateTime } from '../lib/format'
 import type { Order, OrderStatus } from '../lib/orders'
@@ -13,24 +13,23 @@ import Select from '../components/Select'
 import { inputClass, secondaryBtn } from '../components/styles'
 import { StatusBadge } from './Orders'
 
-// Sotilgan tovarlar: do'kondan chiqib ketganlar — holati "Отправлен" yoki "Доставлен" bo'lgan
-// buyurtmalardagi har bir qator. Ikki ko'rinish: tovar bo'yicha jami va har bir sotuv (jurnal).
-// Sana — buyurtma berilgan sana.
+// Sotilgan tovarlar — do'kondan chiqib ketganlar: holati "Отправлен" yoki "Доставлен" bo'lgan
+// buyurtmalardagi qatorlar. Har bir tovar uchun bir vaqtda 4 davr hisoblanadi (shu oy, o'tgan oy,
+// 12 oy, butun vaqt). Tepadagi davr kartochkasi tanlansa — ro'yxat shu davr bo'yicha saralanadi
+// va jurnal shu davrni ko'rsatadi. Sana — buyurtma berilgan sana.
 
 const SOLD: OrderStatus[] = ['shipped', 'delivered']
-const PERIODS = ['30d', 'month', 'prevMonth', '7d', 'all'] as const
+const PERIODS = ['month', 'prevMonth', 'year', 'all'] as const
 type Period = (typeof PERIODS)[number]
 const STATUS_FILTERS = ['sold', 'shipped', 'delivered'] as const
 type StatusFilter = (typeof STATUS_FILTERS)[number]
-const VIEWS = ['products', 'log'] as const
-type View = (typeof VIEWS)[number]
-
-const DAY = 24 * 60 * 60 * 1000
+const TABS = ['products', 'log'] as const
+type Tab = (typeof TABS)[number]
 
 type Line = {
   key: string
   order: Order
-  productId: number
+  productKey: string
   name: string
   image: string | null
   category: string
@@ -39,29 +38,35 @@ type Line = {
   quantity: number
   price: number
   sum: number
+  periods: Set<Period>
 }
+
+type Stat = { units: number; revenue: number; orders: Set<number> }
+const emptyStat = (): Stat => ({ units: 0, revenue: 0, orders: new Set() })
 
 type ProductRow = {
   key: string
   name: string
   image: string | null
   category: string
-  units: number
-  revenue: number
-  orders: Set<number>
-  sizes: Map<string, number>
-  last: string
+  stats: Record<Period, Stat>
+  sizes: Record<Period, Map<string, number>>
 }
 
-function periodRange(period: Period, now: Date): [number, number] {
+// har bir davrning boshlanish/tugash vaqti
+function ranges(now: Date): Record<Period, [number, number]> {
   const y = now.getFullYear()
   const m = now.getMonth()
-  if (period === '7d') return [now.getTime() - 7 * DAY, Infinity]
-  if (period === '30d') return [now.getTime() - 30 * DAY, Infinity]
-  if (period === 'month') return [new Date(y, m, 1).getTime(), Infinity]
-  if (period === 'prevMonth') return [new Date(y, m - 1, 1).getTime(), new Date(y, m, 1).getTime()]
-  return [-Infinity, Infinity]
+  return {
+    month: [new Date(y, m, 1).getTime(), Infinity],
+    prevMonth: [new Date(y, m - 1, 1).getTime(), new Date(y, m, 1).getTime()],
+    // oxirgi 12 oy: shu oy + oldingi 11 oy
+    year: [new Date(y, m - 11, 1).getTime(), Infinity],
+    all: [-Infinity, Infinity],
+  }
 }
+
+const round2 = (n: number) => Math.round(n * 100) / 100
 
 function Thumb({ src }: { src: string | null }) {
   const url = resolveImage(src ?? undefined)
@@ -72,18 +77,21 @@ function Thumb({ src }: { src: string | null }) {
   )
 }
 
-function Tile({ label, value, hint, Icon, tone }: { label: string; value: string; hint: string; Icon: typeof Boxes; tone: string }) {
+function Delta({ current, previous }: { current: number; previous: number }) {
+  const { t } = useT()
+  const pct = changePercent(current, previous)
+  if (pct === null) return null
+  const Icon = pct > 0 ? ArrowUpRight : pct < 0 ? ArrowDownRight : Minus
+  const tone = pct > 0 ? 'text-green-700' : pct < 0 ? 'text-red-600' : 'text-gray-500'
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5">
-      <div className="flex items-start justify-between gap-2">
-        <p className="text-sm text-gray-500">{label}</p>
-        <span className={`flex size-8 items-center justify-center rounded-lg ${tone}`}>
-          <Icon className="size-4" />
-        </span>
-      </div>
-      <p className="mt-3 text-3xl font-semibold tracking-tight text-gray-950 tabular-nums">{value}</p>
-      <p className="mt-1 text-xs text-gray-400">{hint}</p>
-    </div>
+    <span className="inline-flex items-center gap-0.5 text-[11px] text-gray-400">
+      <span className={`inline-flex items-center font-semibold ${tone}`}>
+        <Icon className="size-3" />
+        {pct > 0 ? '+' : ''}
+        {pct}%
+      </span>
+      {t('sales.vsPrev')}
+    </span>
   )
 }
 
@@ -108,9 +116,9 @@ function Sales() {
 
   const pick = <T extends string>(key: string, allowed: readonly T[], fallback: T) =>
     (allowed as readonly string[]).includes(params.get(key) ?? '') ? (params.get(key) as T) : fallback
-  const period = pick<Period>('period', PERIODS, '30d')
+  const period = pick<Period>('period', PERIODS, 'year')
   const statusFilter = pick<StatusFilter>('status', STATUS_FILTERS, 'sold')
-  const view = pick<View>('view', VIEWS, 'products')
+  const tab = pick<Tab>('tab', TABS, 'products')
   const setParam = (key: string, value: string, fallback: string) => {
     const next = new URLSearchParams(params)
     if (value === fallback) next.delete(key)
@@ -120,19 +128,20 @@ function Sales() {
 
   const categoryOf = useMemo(() => new Map(products.map((p) => [p.id, p.category])), [products])
 
-  // tanlangan davr va holatdagi barcha sotilgan qatorlar (yangisi tepada)
+  // barcha sotilgan qatorlar; har biri qaysi davrlarga tushishi belgilanadi
   const lines = useMemo<Line[]>(() => {
-    const [from, to] = periodRange(period, now)
+    const r = ranges(now)
     const statuses: OrderStatus[] = statusFilter === 'sold' ? SOLD : [statusFilter]
     const out: Line[] = []
     for (const o of orders) {
+      if (!statuses.includes(o.status)) continue
       const time = new Date(o.created_at).getTime()
-      if (!statuses.includes(o.status) || time < from || time >= to) continue
+      const periods = new Set(PERIODS.filter((p) => time >= r[p][0] && time < r[p][1]))
       o.items.forEach((i, idx) => {
         out.push({
           key: `${o.id}-${idx}`,
           order: o,
-          productId: i.productId,
+          productKey: String(i.productId ?? i.name),
           name: i.name,
           image: i.image,
           category: categoryOf.get(i.productId) ?? OTHER_CATEGORY,
@@ -140,61 +149,88 @@ function Sales() {
           color: i.color,
           quantity: i.quantity,
           price: Number(i.price),
-          sum: Math.round(Number(i.price) * i.quantity * 100) / 100,
+          sum: round2(Number(i.price) * i.quantity),
+          periods,
         })
       })
     }
     return out
-  }, [orders, period, statusFilter, now, categoryOf])
+  }, [orders, statusFilter, now, categoryOf])
 
-  const visibleLines = useMemo(() => {
-    const matches = createMatcher(search.trim())
-    const q = search.trim().replace(/^#/, '')
-    return lines.filter(
-      (l) => !q || String(l.order.id) === q || matches([l.name, l.category, l.color, l.size, l.order.customer_name].join(' ')),
-    )
-  }, [lines, search])
+  const matches = useMemo(() => createMatcher(search.trim()), [search])
+  const q = search.trim().replace(/^#/, '')
+  const found = useMemo(
+    () => lines.filter((l) => !q || String(l.order.id) === q || matches([l.name, l.category, l.color, l.size, l.order.customer_name].join(' '))),
+    [lines, q, matches],
+  )
 
-  const byProduct = useMemo(() => {
+  // davrlar bo'yicha umumiy (tepadagi kartochkalar)
+  const totals = useMemo(() => {
+    const res = Object.fromEntries(PERIODS.map((p) => [p, emptyStat()])) as Record<Period, Stat>
+    for (const l of found)
+      for (const p of l.periods) {
+        res[p].units += l.quantity
+        res[p].revenue = round2(res[p].revenue + l.sum)
+        res[p].orders.add(l.order.id)
+      }
+    return res
+  }, [found])
+
+  // har bir tovar: 4 davr bo'yicha soni va tushumi
+  const rows = useMemo(() => {
     const map = new Map<string, ProductRow>()
-    for (const l of visibleLines) {
-      const k = String(l.productId ?? l.name)
+    for (const l of found) {
       const row =
-        map.get(k) ??
-        { key: k, name: l.name, image: l.image, category: l.category, units: 0, revenue: 0, orders: new Set<number>(), sizes: new Map<string, number>(), last: l.order.created_at }
-      row.units += l.quantity
-      row.revenue = Math.round((row.revenue + l.sum) * 100) / 100
-      row.orders.add(l.order.id)
-      row.sizes.set(l.size, (row.sizes.get(l.size) ?? 0) + l.quantity)
-      if (l.order.created_at > row.last) row.last = l.order.created_at
-      map.set(k, row)
+        map.get(l.productKey) ??
+        ({
+          key: l.productKey,
+          name: l.name,
+          image: l.image,
+          category: l.category,
+          stats: Object.fromEntries(PERIODS.map((p) => [p, emptyStat()])),
+          sizes: Object.fromEntries(PERIODS.map((p) => [p, new Map()])),
+        } as ProductRow)
+      for (const p of l.periods) {
+        row.stats[p].units += l.quantity
+        row.stats[p].revenue = round2(row.stats[p].revenue + l.sum)
+        row.stats[p].orders.add(l.order.id)
+        row.sizes[p].set(l.size, (row.sizes[p].get(l.size) ?? 0) + l.quantity)
+      }
+      map.set(l.productKey, row)
     }
-    return [...map.values()].sort((a, b) => b.units - a.units || b.revenue - a.revenue)
-  }, [visibleLines])
+    // tanlangan davrda ko'p sotilgani tepada; teng bo'lsa — butun vaqt bo'yicha
+    return [...map.values()].sort(
+      (a, b) =>
+        b.stats[period].units - a.stats[period].units ||
+        b.stats[period].revenue - a.stats[period].revenue ||
+        b.stats.all.units - a.stats.all.units,
+    )
+  }, [found, period])
 
-  const units = visibleLines.reduce((s, l) => s + l.quantity, 0)
-  const revenue = Math.round(visibleLines.reduce((s, l) => s + l.sum, 0) * 100) / 100
-  const orderCount = new Set(visibleLines.map((l) => l.order.id)).size
+  const topUnits = Math.max(1, ...rows.map((r) => r.stats[period].units))
+  const logLines = found.filter((l) => l.periods.has(period))
 
   const exportCsv = () => {
     const date = new Date().toISOString().slice(0, 10)
-    if (view === 'products') {
-      downloadCsv(`cx-shop-prodazhi-tovary-${date}.csv`, [
-        [t('products.colProduct'), t('form.category'), t('sales.colSizes'), t('sales.colUnits'), t('sales.colOrders'), t('sales.colRevenue'), t('sales.colLast')],
-        ...byProduct.map((r) => [
+    if (tab === 'products') {
+      downloadCsv(`cx-shop-prodazhi-${date}.csv`, [
+        [
+          t('products.colProduct'),
+          t('form.category'),
+          ...PERIODS.flatMap((p) => [`${t(`sales.period.${p}`)}, ${t('sales.pcsShort')}`, `${t(`sales.period.${p}`)}, $`]),
+          t('sales.colSizes'),
+        ],
+        ...rows.map((r) => [
           r.name,
-          categoryLabel(lang, r.category),
-          [...r.sizes].map(([s, n]) => `${s}×${n}`).join(', '),
-          r.units,
-          r.orders.size,
-          r.revenue.toFixed(2),
-          formatDateTime(r.last),
+          categoryLabel(lang, r.category === OTHER_CATEGORY ? t('analytics.otherCategory') : r.category),
+          ...PERIODS.flatMap((p) => [r.stats[p].units, r.stats[p].revenue.toFixed(2)]),
+          [...r.sizes[period]].map(([s, n]) => `${s}×${n}`).join(', '),
         ]),
       ])
     } else {
       downloadCsv(`cx-shop-prodazhi-zhurnal-${date}.csv`, [
         [t('orders.colDate'), '№', t('products.colProduct'), t('sales.colSize'), t('sales.colColor'), t('sales.colUnits'), t('sales.colPrice'), t('sales.colSum'), t('orders.colClient'), t('orders.colStatus')],
-        ...visibleLines.map((l) => [
+        ...logLines.map((l) => [
           formatDateTime(l.order.created_at),
           l.order.id,
           l.name,
@@ -212,115 +248,168 @@ function Sales() {
 
   if (!ordersLoaded) return <p className="py-16 text-center text-sm text-gray-400">{t('common.loading')}</p>
 
-  const empty = visibleLines.length === 0
+  const nothingSold = lines.length === 0
 
   return (
     <div className="flex flex-col gap-5">
-      {/* filtrlar: davr, holat */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <Select
-          ariaLabel={t('sales.period')}
-          className="sm:w-52"
-          value={period}
-          onChange={(v) => setParam('period', v, '30d')}
-          options={PERIODS.map((p) => ({ value: p, label: t(`sales.period.${p}`) }))}
-        />
-        <Select
-          ariaLabel={t('orders.colStatus')}
-          className="sm:w-56"
-          value={statusFilter}
-          onChange={(v) => setParam('status', v, 'sold')}
-          options={STATUS_FILTERS.map((s) => ({ value: s, label: s === 'sold' ? t('sales.allSold') : t(`status.${s}`) }))}
-        />
-        <p className="text-xs text-gray-400 sm:ml-auto">{t('sales.hint')}</p>
+      {/* davrlar: bitta lenta, har biri tanlanadi (ro'yxat va jurnal shu davr bo'yicha) */}
+      <div role="radiogroup" aria-label={t('sales.period')} className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-gray-200 bg-gray-200 lg:grid-cols-4">
+        {PERIODS.map((p) => {
+          const s = totals[p]
+          const active = period === p
+          return (
+            <button
+              key={p}
+              type="button"
+              role="radio"
+              aria-checked={active}
+              onClick={() => setParam('period', p, 'year')}
+              className={`relative cursor-pointer p-4 text-left transition sm:p-5 ${active ? 'bg-blue-50' : 'bg-white hover:bg-gray-50'}`}
+            >
+              {active && <span className="absolute inset-x-0 top-0 h-0.5 bg-blue-600" />}
+              <p className={`text-xs font-medium ${active ? 'text-blue-800' : 'text-gray-500'}`}>{t(`sales.period.${p}`)}</p>
+              <p className="mt-2 text-2xl font-semibold tracking-tight text-gray-950 tabular-nums">
+                {s.units}
+                <span className="ml-1 text-sm font-normal text-gray-400">{t('sales.pcsShort')}</span>
+              </p>
+              <p className="text-sm font-medium text-gray-700 tabular-nums">{money(s.revenue)}</p>
+              <p className="mt-1 flex flex-wrap items-center gap-x-2 text-[11px] text-gray-400">
+                {t('sales.ordersCount', { count: s.orders.size })}
+                {p === 'month' && <Delta current={s.units} previous={totals.prevMonth.units} />}
+              </p>
+            </button>
+          )
+        })}
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Tile label={t('sales.tileUnits')} value={String(units)} hint={t('sales.tileUnitsHint')} Icon={PackageCheck} tone="bg-green-50 text-green-700" />
-        <Tile label={t('sales.tileRevenue')} value={money(revenue)} hint={t('sales.tileRevenueHint')} Icon={Wallet} tone="bg-blue-50 text-blue-700" />
-        <Tile label={t('sales.tileOrders')} value={String(orderCount)} hint={t('sales.tileOrdersHint')} Icon={Receipt} tone="bg-gray-100 text-gray-600" />
-        <Tile label={t('sales.tileProducts')} value={String(byProduct.length)} hint={t('sales.tileProductsHint')} Icon={Boxes} tone="bg-amber-50 text-amber-700" />
-      </div>
-
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="relative flex-1">
-          <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-gray-400" />
-          <input
-            className={`${inputClass} pl-9`}
-            placeholder={t('sales.searchPlaceholder')}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-        {/* ko'rinish: tovar bo'yicha jami / har bir sotuv */}
-        <div role="group" className="flex h-10 items-center gap-0.5 rounded-lg bg-gray-100 p-1 text-sm">
-          {VIEWS.map((v) => (
+      {/* bo'limlar (tagi chizilgan) + qidiruv va filtr */}
+      <div className="flex flex-col gap-3 border-b border-gray-200 lg:flex-row lg:items-end lg:justify-between">
+        <div className="-mb-px flex gap-1">
+          {TABS.map((v) => (
             <button
               key={v}
               type="button"
-              aria-pressed={view === v}
-              onClick={() => setParam('view', v, 'products')}
-              className={`flex h-full cursor-pointer items-center rounded-md px-3 font-medium whitespace-nowrap transition ${
-                view === v ? 'bg-blue-100 text-blue-800 shadow-sm ring-1 ring-blue-200' : 'text-gray-500 hover:text-gray-950'
+              aria-pressed={tab === v}
+              onClick={() => setParam('tab', v, 'products')}
+              className={`flex cursor-pointer items-center gap-1.5 border-b-2 px-3 py-2 text-sm font-medium whitespace-nowrap transition ${
+                tab === v ? 'border-gray-950 text-gray-950' : 'border-transparent text-gray-500 hover:text-gray-800'
               }`}
             >
               {t(`sales.view.${v}`)}
+              <span className="rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] leading-none font-semibold text-gray-500">
+                {v === 'products' ? rows.length : logLines.length}
+              </span>
             </button>
           ))}
         </div>
-        <button type="button" onClick={exportCsv} disabled={empty} className={`${secondaryBtn} h-10`}>
-          <Download className="size-4" />
-          CSV
-        </button>
+        <div className="flex flex-col gap-2 pb-3 sm:flex-row sm:items-center">
+          <div className="relative sm:w-80">
+            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-gray-400" />
+            <input
+              className={`${inputClass} h-9 pl-9`}
+              placeholder={t('sales.searchPlaceholder')}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          <Select
+            ariaLabel={t('orders.colStatus')}
+            className="sm:w-48"
+            value={statusFilter}
+            onChange={(v) => setParam('status', v, 'sold')}
+            options={STATUS_FILTERS.map((s) => ({ value: s, label: s === 'sold' ? t('sales.allSold') : t(`status.${s}`) }))}
+          />
+          <button type="button" onClick={exportCsv} disabled={tab === 'products' ? rows.length === 0 : logLines.length === 0} className={`${secondaryBtn} h-10`}>
+            <Download className="size-4" />
+            CSV
+          </button>
+        </div>
       </div>
 
-      {empty ? (
+      <p className="-mt-2 text-xs text-gray-400">{t('sales.hint')}</p>
+
+      {nothingSold || (tab === 'products' ? rows.length === 0 : logLines.length === 0) ? (
         <div className="flex flex-col items-center rounded-xl border border-dashed border-gray-300 px-6 py-16 text-center">
           <PackageCheck className="mb-3 size-10 text-gray-300" strokeWidth={1.5} />
-          <p className="text-gray-950">{lines.length === 0 ? t('sales.empty') : t('common.nothingFound')}</p>
-          {lines.length === 0 && <p className="mt-1 max-w-md text-sm text-gray-500">{t('sales.emptyHint')}</p>}
+          <p className="text-gray-950">{nothingSold ? t('sales.empty') : search ? t('common.nothingFound') : t('sales.emptyPeriod')}</p>
+          {nothingSold && <p className="mt-1 max-w-md text-sm text-gray-500">{t('sales.emptyHint')}</p>}
         </div>
-      ) : view === 'products' ? (
-        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
-          <div className="hidden grid-cols-[minmax(0,1.4fr)_minmax(0,1.6fr)_80px_80px_110px] gap-3 border-b border-gray-200 bg-gray-50 px-4 py-3 text-xs font-medium text-gray-500 md:grid">
-            <span>{t('products.colProduct')}</span>
-            <span>{t('sales.colSizes')}</span>
-            <span className="text-right">{t('sales.colUnits')}</span>
-            <span className="text-right">{t('sales.colOrders')}</span>
-            <span className="text-right">{t('sales.colRevenue')}</span>
-          </div>
-          <ul className="divide-y divide-gray-100">
-            {byProduct.map((r) => (
-              <li key={r.key} className="grid gap-3 p-4 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1.6fr)_80px_80px_110px] md:items-center">
-                <div className="flex min-w-0 items-center gap-3">
-                  <Thumb src={r.image} />
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-gray-950">{r.name}</p>
-                    <p className="text-xs text-gray-500">
-                      {categoryLabel(lang, r.category === OTHER_CATEGORY ? t('analytics.otherCategory') : r.category)} ·{' '}
-                      {t('sales.lastSold', { date: formatDateTime(r.last) })}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {[...r.sizes].map(([size, n]) => (
-                    <span key={size} className="rounded-md bg-gray-100 px-2 py-0.5 text-xs text-gray-700 tabular-nums">
-                      {sizeLabel(lang, size)} <span className="font-semibold text-gray-950">×{n}</span>
-                    </span>
-                  ))}
-                </div>
-                <p className="text-sm font-semibold whitespace-nowrap text-gray-950 tabular-nums md:text-right">
-                  <span className="mr-1 text-xs font-normal text-gray-400 md:hidden">{t('sales.colUnits')}:</span>
-                  {t('common.pcs', { count: r.units })}
-                </p>
-                <p className="text-sm whitespace-nowrap text-gray-600 tabular-nums md:text-right">
-                  <span className="mr-1 text-xs text-gray-400 md:hidden">{t('sales.colOrders')}:</span>
-                  {r.orders.size}
-                </p>
-                <p className="text-sm font-semibold whitespace-nowrap text-gray-950 tabular-nums md:text-right">{money(r.revenue)}</p>
-              </li>
-            ))}
-          </ul>
+      ) : tab === 'products' ? (
+        // tovar x davr jadvali: qaysi tovar qachon qancha sotilgani bir qarashda
+        <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+          <table className="w-full min-w-[820px] text-sm">
+            <thead className="border-b border-gray-200 bg-gray-50 text-xs font-medium text-gray-500">
+              <tr>
+                <th className="w-10 px-3 py-3 text-center">#</th>
+                <th className="px-3 py-3 text-left">{t('products.colProduct')}</th>
+                {PERIODS.map((p) => (
+                  <th
+                    key={p}
+                    className={`w-[132px] px-3 py-3 text-right whitespace-nowrap ${period === p ? 'bg-blue-50 text-blue-800' : ''}`}
+                  >
+                    {t(`sales.period.${p}`)}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {rows.map((r, idx) => {
+                const cur = r.stats[period]
+                return (
+                  <tr key={r.key} className="align-top transition hover:bg-gray-50/70">
+                    <td className="px-3 py-3 text-center">
+                      <span
+                        className={`inline-flex size-6 items-center justify-center rounded-full text-xs font-semibold tabular-nums ${
+                          cur.units > 0 && idx < 3 ? 'bg-gray-950 text-white' : 'bg-gray-100 text-gray-500'
+                        }`}
+                      >
+                        {idx + 1}
+                      </span>
+                    </td>
+                    <td className="px-3 py-3">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <Thumb src={r.image} />
+                        <div className="min-w-0 flex-1">
+                          <p className="max-w-[300px] truncate font-medium text-gray-950">{r.name}</p>
+                          <p className="text-xs text-gray-500">
+                            {categoryLabel(lang, r.category === OTHER_CATEGORY ? t('analytics.otherCategory') : r.category)}
+                          </p>
+                          {/* tanlangan davrdagi ulush va o'lchamlar */}
+                          <div className="mt-1.5 h-1 max-w-[300px] rounded-full bg-gray-100">
+                            <div className="h-full rounded-full bg-blue-600" style={{ width: `${(cur.units / topUnits) * 100}%` }} />
+                          </div>
+                          {r.sizes[period].size > 0 && (
+                            <div className="mt-1.5 flex flex-wrap gap-1">
+                              {[...r.sizes[period]].map(([size, n]) => (
+                                <span key={size} className="rounded bg-gray-100 px-1.5 py-0.5 text-[11px] text-gray-600 tabular-nums">
+                                  {sizeLabel(lang, size)} <b className="text-gray-950">×{n}</b>
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+                    {PERIODS.map((p) => {
+                      const s = r.stats[p]
+                      return (
+                        <td key={p} className={`px-3 py-3 text-right whitespace-nowrap tabular-nums ${period === p ? 'bg-blue-50/50' : ''}`}>
+                          {s.units > 0 ? (
+                            <>
+                              <p className="font-semibold text-gray-950">{t('common.pcs', { count: s.units })}</p>
+                              <p className="text-xs text-gray-500">{money(s.revenue)}</p>
+                            </>
+                          ) : (
+                            <span className="text-gray-300">—</span>
+                          )}
+                        </td>
+                      )
+                    })}
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
         </div>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
@@ -337,7 +426,7 @@ function Sales() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {visibleLines.map((l) => (
+              {logLines.map((l) => (
                 <tr key={l.key} className="transition hover:bg-gray-50">
                   <td className="px-4 py-3 whitespace-nowrap text-gray-500">{formatDateTime(l.order.created_at)}</td>
                   <td className="px-4 py-3">

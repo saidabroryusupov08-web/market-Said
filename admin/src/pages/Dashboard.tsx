@@ -132,7 +132,8 @@ function Dashboard() {
       return acc
     }, {}),
   ).sort((a, b) => b[1] - a[1])
-  const maxInCategory = Math.max(1, ...byCategory.map(([, n]) => n))
+  // chiziq uzunligi — barcha mahsulotlar ichidagi ulushi (hammasi = 100%)
+  const totalProducts = Math.max(1, products.length)
 
   const runImport = async () => {
     setImporting(true)
@@ -315,7 +316,7 @@ function Dashboard() {
                     <div className="h-1.5 rounded-full bg-gray-100">
                       <div
                         className="h-full rounded-full bg-gray-950"
-                        style={{ width: `${(count / maxInCategory) * 100}%` }}
+                        style={{ width: `${(count / totalProducts) * 100}%` }}
                       />
                     </div>
                   </Link>

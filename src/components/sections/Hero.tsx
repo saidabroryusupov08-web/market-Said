@@ -51,7 +51,7 @@ function Hero() {
         }`}
       >
         <div>
-          <h1 className="text-4xl leading-tight font-normal break-words text-gray-950 sm:text-5xl lg:text-6xl">
+          <h1 className="text-4xl leading-tight font-normal break-words text-gray-950 sm:text-5xl xl:text-6xl">
             {title}
           </h1>
           <p className="mt-6 max-w-[460px] text-lg leading-relaxed text-gray-500">

@@ -73,6 +73,7 @@ const uz: Dict = {
   'nav.signOut': 'Chiqish',
   'nav.menu': 'Menyu',
   'nav.closeMenu': 'Menyuni yopish',
+  'nav.refreshed': "Ma'lumotlar yangilandi",
   'nav.refresh': 'Maʼlumotlarni yangilash',
 
   'store.confirmTitle': "Do'konga o'tasizmi?",

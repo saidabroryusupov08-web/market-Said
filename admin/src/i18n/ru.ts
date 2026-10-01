@@ -73,6 +73,7 @@ const ru = {
   'nav.signOut': 'Выйти',
   'nav.menu': 'Меню',
   'nav.closeMenu': 'Закрыть меню',
+  'nav.refreshed': "Данные обновлены",
   'nav.refresh': 'Обновить данные',
 
   'store.confirmTitle': 'Перейти в магазин?',

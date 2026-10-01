@@ -73,6 +73,7 @@ const en: Dict = {
   'nav.signOut': 'Sign out',
   'nav.menu': 'Menu',
   'nav.closeMenu': 'Close menu',
+  'nav.refreshed': "Data refreshed",
   'nav.refresh': 'Refresh data',
 
   'store.confirmTitle': 'Go to the store?',

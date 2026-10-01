@@ -22,6 +22,7 @@ import Avatar from './Avatar'
 import GlobalSearch from './GlobalSearch'
 import OpenStoreButton from './OpenStoreButton'
 import SecurityModal from './SecurityModal'
+import { useToast } from './ui'
 import { alertBadge, glassActive, glassBadge, iconBtn } from './styles'
 
 
@@ -158,10 +159,15 @@ function Layout({ children }: { children: ReactNode }) {
   const { t, lang, setLang } = useT()
   const titleKey = titles[pathname as keyof typeof titles]
 
+  const showToast = useToast()
+
+  // so'rov bir zumda tugasa ham aylanish ko'rinsin va natija xabar bilan aytilsin
   const refresh = async () => {
+    if (reloading) return
     setReloading(true)
-    await reload()
+    const [error] = await Promise.all([reload(), new Promise((r) => setTimeout(r, 700))])
     setReloading(false)
+    showToast(error ?? t('nav.refreshed'), error ? 'error' : 'success')
   }
 
   return (
@@ -210,6 +216,7 @@ function Layout({ children }: { children: ReactNode }) {
         <button
           type="button"
           onClick={refresh}
+          disabled={reloading}
           aria-label={t('nav.refresh')}
           title={t('nav.refresh')}
           className={iconBtn}

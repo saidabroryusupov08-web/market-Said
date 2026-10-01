@@ -87,7 +87,9 @@ function SearchInput({ onSubmit }: { onSubmit?: () => void }) {
         placeholder={t('search.placeholder')}
         aria-label={t('search.label')}
         autoComplete="off"
-        className="h-[37px] w-full rounded-lg border border-transparent bg-gray-100 pr-9 pl-10 text-sm outline-none transition focus:border-blue-500 focus:bg-white focus:shadow-[0_0_0_4px_rgba(59,130,246,0.25)]"
+        className={`h-[37px] w-full rounded-lg border border-transparent bg-gray-100 pl-9 text-sm outline-none transition focus:border-blue-500 focus:bg-white focus:shadow-[0_0_0_4px_rgba(59,130,246,0.25)] ${
+          query ? 'pr-9' : 'pr-3'
+        }`}
       />
       {query && (
         <button
@@ -161,12 +163,12 @@ function Header() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-gray-200 bg-white">
-      <nav className="mx-auto flex h-[70px] w-[90%] items-center justify-between gap-6 lg:w-[70%]">
-        <div className="flex items-center gap-2 lg:gap-0">
+      <nav className="mx-auto flex h-[70px] w-[90%] items-center justify-between gap-6 lg:w-[70%] xl:w-[max(70%,min(94%,1120px))]">
+        <div className="flex items-center gap-2 xl:gap-0">
           <button
             type="button"
             aria-label={t('nav.menu')}
-            className={`${iconBtn} -ml-2 lg:hidden`}
+            className={`${iconBtn} -ml-2 xl:hidden`}
             onClick={() => setMenuOpen((open) => !open)}
           >
             {menuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
@@ -175,7 +177,7 @@ function Header() {
             <Logo compact />
           </a>
 
-          <ul className="hidden items-center gap-5 lg:flex xl:gap-8">
+          <ul className="hidden items-center gap-8 xl:flex">
             {navLinks.map((link) => (
               <li key={link.label}>
                 <a
@@ -193,7 +195,7 @@ function Header() {
           </ul>
         </div>
 
-        <div className="hidden max-w-[364px] min-w-[170px] flex-1 md:block">
+        <div className="hidden max-w-[364px] min-w-[190px] flex-1 md:block">
           <SearchInput />
         </div>
 
@@ -246,7 +248,7 @@ function Header() {
       </nav>
 
       <div
-        className={`grid overflow-hidden transition-all duration-300 lg:hidden ${
+        className={`grid overflow-hidden transition-all duration-300 xl:hidden ${
           menuOpen ? 'grid-rows-[1fr] border-t border-gray-200' : 'grid-rows-[0fr]'
         }`}
       >

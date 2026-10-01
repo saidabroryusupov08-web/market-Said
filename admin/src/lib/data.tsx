@@ -58,7 +58,8 @@ type AdminDataValue = {
   loadError: string
   unread: number
   newOrders: number
-  reload: () => Promise<void>
+  // xato bo'lsa uning matni, hammasi yuklansa null
+  reload: () => Promise<string | null>
   createProduct: (input: ProductInput) => Result
   updateProduct: (id: number, input: ProductInput) => Result
   deleteProduct: (id: number) => Result
@@ -100,15 +101,22 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
   const [loadError, setLoadError] = useState('')
   const [siteSettings, setSiteSettings] = useState<SiteSettings>(DEFAULT_SITE_SETTINGS)
 
+  const fail = useCallback((error: Parameters<typeof describe>[0]) => {
+    const text = describe(error) ?? tr('error.unknown')
+    setLoadError(text)
+    return text
+  }, [])
+
   const loadProducts = useCallback(async () => {
     const { data, error } = await db
       .from('products')
       .select('*')
       .order('created_at', { ascending: false })
-    if (error) return setLoadError(describe(error) ?? '')
+    if (error) return fail(error)
     setProducts((data as ProductRow[]).map(fromRow))
     setProductsLoaded(true)
-  }, [db])
+    return null
+  }, [db, fail])
 
   const loadMessages = useCallback(async () => {
     const { data, error } = await db
@@ -116,11 +124,12 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
       .select('*')
       .order('created_at', { ascending: false })
       .limit(500)
-    if (error) return setLoadError(describe(error) ?? '')
+    if (error) return fail(error)
     setMessages(data as Message[])
     setMessagesLoaded(true)
     setLoadError('')
-  }, [db])
+    return null
+  }, [db, fail])
 
   const loadOrders = useCallback(async () => {
     const { data, error } = await db
@@ -128,10 +137,11 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
       .select('*')
       .order('created_at', { ascending: false })
       .limit(500)
-    if (error) return setLoadError(describe(error) ?? '')
+    if (error) return fail(error)
     setOrders(data as Order[])
     setOrdersLoaded(true)
-  }, [db])
+    return null
+  }, [db, fail])
 
   const loadSettings = useCallback(async () => {
     const { data, error } = await db.from('site_settings').select('*').eq('id', 1).maybeSingle()
@@ -139,7 +149,8 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
   }, [db])
 
   const reload = useCallback(async () => {
-    await Promise.all([loadProducts(), loadMessages(), loadOrders(), loadSettings()])
+    const results = await Promise.all([loadProducts(), loadMessages(), loadOrders(), loadSettings()])
+    return results.find((r) => typeof r === 'string') ?? null
   }, [loadProducts, loadMessages, loadOrders, loadSettings])
 
   useEffect(() => {

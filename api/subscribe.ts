@@ -119,8 +119,8 @@ export async function POST(request: Request): Promise<Response> {
   const token = process.env.TELEGRAM_BOT_TOKEN
   const chatId = process.env.TELEGRAM_CHAT_ID
   // manzil ochiq, shuning uchun do'kon bilan bir xil VITE_SUPABASE_URL ham ishlaydi
-  const supabaseUrl = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.VITE_SUPABASE_URL
+  const supabaseKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY)
   const hasTelegram = !!(token && chatId)
   const hasSupabase = !!(supabaseUrl && supabaseKey)
   if (!hasTelegram && !hasSupabase) {

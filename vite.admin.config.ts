@@ -12,6 +12,8 @@ export default defineConfig({
   root: 'admin',
   // .env.local loyiha ildizida turadi (do'kon bilan umumiy)
   envDir: rootDir,
+  // brauzerga faqat ochiq kalitlar: VITE_* va Supabase integratsiyasining NEXT_PUBLIC_SUPABASE_*
+  envPrefix: ['VITE_', 'NEXT_PUBLIC_SUPABASE_'],
   plugins: [react(), tailwindcss()],
   server: {
     port: 5180,

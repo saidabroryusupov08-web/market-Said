@@ -5,15 +5,19 @@ import { useT } from '../i18n'
 import { useToast } from '../components/ui'
 import { secondaryBtn } from '../components/styles'
 
-// Ikki QR kod: do'kon (xaridorlar uchun) va admin panel. Manzillar:
-//  - do'kon: VITE_STORE_URL (Vercel'dagi do'kon manzili)
-//  - admin: panel ochilgan manzil (window.location.origin)
-// localhost bo'lsa — telefon bu manzilni ocholmaydi, shuni ogohlantiramiz.
+// Ikki QR kod: do'kon (xaridorlar uchun) va admin panel. QR har doim INTERNETDAGI manzilni
+// ko'rsatadi (localhost'ni telefon ocholmaydi) — panel shu kompyuterda ochilgan bo'lsa ham:
+//  - do'kon: VITE_PUBLIC_STORE_URL, bo'lmasa Vercel'dagi do'kon manzili
+//  - admin: VITE_PUBLIC_ADMIN_URL, bo'lmasa panel internetda ochilgan bo'lsa — o'sha manzil
 
-const STORE_URL = ((import.meta.env.VITE_STORE_URL as string | undefined) || '').replace(/\/$/, '')
-const DARK = '#0f172a'
-
+const env = import.meta.env as Record<string, string | undefined>
+const trimSlash = (url: string) => url.replace(/\/$/, '')
 const isLocal = (url: string) => /^https?:\/\/(localhost|127\.|0\.0\.0\.0|\[::1\])/i.test(url)
+const PUBLIC_STORE_URL = trimSlash(env.VITE_PUBLIC_STORE_URL || 'https://market-said.vercel.app')
+const PUBLIC_ADMIN_URL = trimSlash(
+  env.VITE_PUBLIC_ADMIN_URL || (isLocal(window.location.origin) ? '' : window.location.origin),
+)
+const DARK = '#0f172a'
 
 // QR + ostida yozuv bo'lgan PNG (chop etish va telefonga yuborish uchun qulay)
 async function makePng(url: string, caption: string) {
@@ -246,7 +250,7 @@ function QrCard({
       ) : (
         <p className="flex items-start gap-2 p-5 text-sm text-gray-500">
           <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-500" />
-          {t('qr.noStoreUrl')}
+          {t(kind === 'admin' ? 'qr.adminNotPublished' : 'qr.noStoreUrl')}
         </p>
       )}
     </section>
@@ -255,13 +259,12 @@ function QrCard({
 
 function QrCodes() {
   const { t } = useT()
-  const adminUrl = window.location.origin
   return (
     <div className="flex flex-col gap-5">
       <p className="text-sm text-gray-500">{t('qr.intro')}</p>
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-        <QrCard kind="store" url={STORE_URL} title={t('qr.storeTitle')} subtitle={t('qr.storeSubtitle')} Icon={Store} tone="bg-blue-50 text-blue-700" />
-        <QrCard kind="admin" url={adminUrl} title={t('qr.adminTitle')} subtitle={t('qr.adminSubtitle')} Icon={ShieldCheck} tone="bg-gray-100 text-gray-700" />
+        <QrCard kind="store" url={PUBLIC_STORE_URL} title={t('qr.storeTitle')} subtitle={t('qr.storeSubtitle')} Icon={Store} tone="bg-blue-50 text-blue-700" />
+        <QrCard kind="admin" url={PUBLIC_ADMIN_URL} title={t('qr.adminTitle')} subtitle={t('qr.adminSubtitle')} Icon={ShieldCheck} tone="bg-gray-100 text-gray-700" />
       </div>
     </div>
   )

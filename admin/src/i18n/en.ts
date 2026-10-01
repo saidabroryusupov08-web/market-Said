@@ -107,6 +107,7 @@ const en: Dict = {
   'qr.popupBlocked': 'The browser blocked the print window — allow pop-ups',
   'qr.localWarning': 'This is this computer’s address (localhost): a phone cannot open it. The code will work once the site is published on a domain.',
   'qr.noStoreUrl': 'The store address is not set. Add VITE_STORE_URL to the Vercel settings (admin panel) and the QR code will appear here.',
+  'qr.adminNotPublished': 'The admin panel is not published online yet. Once it is deployed to Vercel, its QR code will appear here.',
   'stock.add': 'Add to stock',
   'stock.addAria': 'Add to stock: {name}',
   'stock.addTitle': 'Stock arrival',

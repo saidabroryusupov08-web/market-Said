@@ -107,6 +107,7 @@ const uz: Dict = {
   'qr.popupBlocked': "Brauzer chop etish oynasini to'sdi — qalqib chiquvchi oynalarga ruxsat bering",
   'qr.localWarning': 'Bu shu kompyuterning manzili (localhost): telefon uni ocholmaydi. Sayt domenga chiqarilgach, kod ishlaydi.',
   'qr.noStoreUrl': "Do'kon manzili berilmagan. Vercel sozlamalariga (admin panel) VITE_STORE_URL qo'shing — shunda bu yerda QR kod chiqadi.",
+  'qr.adminNotPublished': "Admin panel hali internetga chiqarilmagan. Vercel'ga chiqarilgach, uning QR kodi shu yerda paydo bo'ladi.",
   'stock.add': "Omborga qo'shish",
   'stock.addAria': "Omborga qo'shish: {name}",
   'stock.addTitle': 'Tovar kirimi',

@@ -8,6 +8,7 @@ import {
   LogOut,
   Menu,
   Package,
+  PackageCheck,
   RefreshCw,
   ShoppingBag,
   ShieldCheck,
@@ -70,6 +71,8 @@ function Sidebar({
     { to: '/orders', label: t('nav.orders'), Icon: ShoppingBag, badge: newOrders || null, highlight: true },
     { to: '/products', label: t('nav.products'), Icon: Package, badge: products.length || null },
     { to: '/messages', label: t('nav.messages'), Icon: Inbox, badge: unread || null, highlight: true },
+    // do'kondan chiqib ketgan (jo'natilgan / yetkazilgan) tovarlar
+    { to: '/sales', label: t('nav.sales'), Icon: PackageCheck, badge: null },
     { to: '/analytics', label: t('nav.analytics'), Icon: BarChart3, badge: null },
     // omborda tugagan mahsulotlar soni — qizil (e'tibor talab qiladi)
     { to: '/stock', label: t('nav.stock'), Icon: Warehouse, badge: outOfStock || null, highlight: true },
@@ -193,6 +196,7 @@ const titles = {
   '/orders': 'nav.orders',
   '/products': 'nav.products',
   '/messages': 'nav.messages',
+  '/sales': 'nav.sales',
   '/analytics': 'nav.analytics',
   '/stock': 'nav.stock',
 } as const

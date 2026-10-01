@@ -10,6 +10,7 @@ import Login, { MfaChallenge, NotAdmin, NotConfigured, ResetPassword } from './p
 import Messages from './pages/Messages'
 import Orders from './pages/Orders'
 import Products from './pages/Products'
+import Sales from './pages/Sales'
 import Stock from './pages/Stock'
 
 // Admin bo'lmagan hech kim panelning ichki sahifalarini ko'rmaydi.
@@ -38,6 +39,7 @@ function Gate() {
           <Route path="/orders" element={<Orders />} />
           <Route path="/products" element={<Products />} />
           <Route path="/messages" element={<Messages />} />
+          <Route path="/sales" element={<Sales />} />
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/stock" element={<Stock />} />
           <Route path="*" element={<Navigate to="/" replace />} />

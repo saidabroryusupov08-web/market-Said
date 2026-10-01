@@ -276,7 +276,10 @@ function Profile({ session }: { session: Session }) {
     }
     const error = await updateProfile({ name: name.slice(0, NAME_MAX), avatarUrl })
     setSaving(false)
-    if (error) return showToast(error, 'error')
+    if (error) {
+      if (pending instanceof Blob && avatarUrl) await removeImage(avatarUrl)
+      return showToast(error, 'error')
+    }
     // eski rasm Storage'da keraksiz qolmasin
     if (current.avatarUrl && current.avatarUrl !== avatarUrl) await removeImage(current.avatarUrl)
     setPending(undefined)

@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import {
   BarChart3,
@@ -207,6 +207,20 @@ function Layout({ children }: { children: ReactNode }) {
   const titleKey = titles[pathname as keyof typeof titles]
 
   const showToast = useToast()
+
+  // brauzer tabida bo'lim nomi tanlangan tilda ("Склад — cX-shop admin")
+  const pageTitle = titleKey ? t(titleKey) : ''
+  useEffect(() => {
+    document.title = pageTitle ? `${pageTitle} — cX-shop admin` : 'cX-shop admin'
+  }, [pageTitle])
+
+  // telefondagi menyu Esc bilan ham yopiladi
+  useEffect(() => {
+    if (!menuOpen) return
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setMenuOpen(false)
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [menuOpen])
 
   // ma'lumot kelishi bilan tugaydi (sun'iy kutish yo'q), natija xabar bilan aytiladi
   const refresh = async () => {

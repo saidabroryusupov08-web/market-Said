@@ -72,8 +72,11 @@ function StockRow({ product, onAdd }: { product: Product; onAdd: () => void }) {
 
   const save = async () => {
     if (invalid.length > 0) return showToast(t('stock.invalid'), 'error')
+    const changed = product.sizes.filter((s) => (draft[s] ?? '') !== original[s])
+    const vals = Object.fromEntries(changed.filter((s) => draft[s]).map((s) => [s, Number(draft[s])]))
+    const clear = changed.filter((s) => !draft[s])
     setSaving(true)
-    const error = await saveStock(product.id, preview.stock!)
+    const error = await saveStock(product.id, vals, clear)
     setSaving(false)
     showToast(error ?? t('stock.saved', { name: product.name }), error ? 'error' : 'success')
   }

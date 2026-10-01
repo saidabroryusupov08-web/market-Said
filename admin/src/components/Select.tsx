@@ -59,12 +59,14 @@ function Select({
     } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
       e.preventDefault()
       if (!open) return openList()
+      if (options.length === 0) return
       const step = e.key === 'ArrowDown' ? 1 : -1
       setActive((i) => (i + step + options.length) % options.length)
     } else if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault()
-      if (open) choose(options[active].value)
-      else openList()
+      if (open) {
+        if (options[active]) choose(options[active].value)
+      } else openList()
     } else if (e.key === 'Tab') {
       setOpen(false)
     }

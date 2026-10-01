@@ -140,6 +140,17 @@ export function ConfirmDialog({
   const [error, setError] = useState('')
   const [checking, setChecking] = useState(false)
 
+  // Esc: faqat shu so'rov oynasi yopiladi — orqadagi oyna (masalan buyurtma) ochiq qoladi
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return
+      e.stopImmediatePropagation()
+      onCancel()
+    }
+    document.addEventListener('keydown', onKey, true)
+    return () => document.removeEventListener('keydown', onKey, true)
+  }, [onCancel])
+
   const confirm = async (e?: FormEvent) => {
     e?.preventDefault()
     if (checking) return

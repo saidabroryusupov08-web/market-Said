@@ -54,10 +54,13 @@ function OrderDetails({ order, onClose }: { order: Order; onClose: () => void })
   const { t, lang } = useT()
   const [note, setNote] = useState(order.admin_note ?? '')
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [busy, setBusy] = useState(false)
 
   const setStatus = async (status: OrderStatus) => {
-    if (status === order.status) return
+    if (status === order.status || busy) return
+    setBusy(true)
     const error = await updateOrder(order.id, { status })
+    setBusy(false)
     showToast(error ?? t('orders.statusSet', { status: t(statusKey(status)) }), error ? 'error' : 'success')
   }
 
@@ -90,8 +93,9 @@ function OrderDetails({ order, onClose }: { order: Order; onClose: () => void })
                 key={s.value}
                 type="button"
                 aria-pressed={order.status === s.value}
+                disabled={busy}
                 onClick={() => setStatus(s.value)}
-                className={`cursor-pointer rounded-full border px-3 py-1 text-xs font-medium transition ${
+                className={`cursor-pointer rounded-full disabled:cursor-wait disabled:opacity-60 border px-3 py-1 text-xs font-medium transition ${
                   order.status === s.value
                     ? glassChip
                     : 'border-gray-300 text-gray-600 hover:bg-gray-100'

@@ -161,7 +161,9 @@ function Analytics() {
   const [params, setParams] = useSearchParams()
   const [now] = useState(() => new Date())
   const currentKey = monthKeyOf(now)
-  const selected = params.get('month') ?? currentKey
+  // ?month=abc yoki kelajak oy kiritilsa — sahifa buzilmasin, joriy oy ko'rsatiladi
+  const requested = params.get('month') ?? ''
+  const selected = /^\d{4}-(0[1-9]|1[0-2])$/.test(requested) && requested <= currentKey ? requested : currentKey
   const [showMonthlyTable, setShowMonthlyTable] = useState(false)
   const [showDailyTable, setShowDailyTable] = useState(false)
 

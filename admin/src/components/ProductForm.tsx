@@ -12,11 +12,14 @@ import { useToast } from './ui'
 import { glassChip, inputClass, labelClass, primaryBtn, secondaryBtn } from './styles'
 
 // "S, M, L" -> ['S', 'M', 'L']
-const splitList = (text: string) =>
-  text
+// takrorlar olib tashlanadi ("S, s, S" -> ['S']), aks holda o'lcham ikki marta ko'rinardi
+const splitList = (text: string) => {
+  const seen = new Set<string>()
+  return text
     .split(',')
     .map((s) => s.trim())
-    .filter(Boolean)
+    .filter((s) => s && !seen.has(s.toLowerCase()) && seen.add(s.toLowerCase()))
+}
 
 type FormState = {
   name: string
@@ -55,6 +58,10 @@ function ProductForm({ product, onDone }: { product?: Product; onDone: () => voi
   const showToast = useToast()
   const { t, lang } = useT()
   const [form, setForm] = useState<FormState>(() => toForm(product))
+  // "или ссылка (URL)" maydonining o'z matni (oldin birinchi harfdayoq tozalanib qolardi)
+  const [urlText, setUrlText] = useState(() => (/^https?:/.test(product?.image ?? '') ? product!.image! : ''))
+  // forma yopilgandan keyin tugagan yuklash rasmi ham o'chirilishi uchun
+  const mountedRef = useRef(true)
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({})
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -71,7 +78,9 @@ function ProductForm({ product, onDone }: { product?: Product; onDone: () => voi
   })
   useEffect(() => {
     const tracker = trackerRef.current
+    mountedRef.current = true
     return () => {
+      mountedRef.current = false
       tracker.uploaded.filter((url) => url !== tracker.saved).forEach((url) => tracker.remove(url))
       tracker.uploaded = []
     }
@@ -93,9 +102,13 @@ function ProductForm({ product, onDone }: { product?: Product; onDone: () => voi
     try {
       const result = await uploadImage(await resizeImage(file))
       if ('error' in result) showToast(result.error, 'error')
-      else {
+      else if (!mountedRef.current) {
+        // forma yuklash tugashidan oldin yopilgan — rasm keraksiz qolmasin
+        trackerRef.current.remove(result.url)
+      } else {
         trackerRef.current.uploaded.push(result.url)
         set('image', result.url)
+        setUrlText(result.url)
       }
     } catch {
       showToast(t('common.imageUploadFailed'), 'error')
@@ -172,7 +185,10 @@ function ProductForm({ product, onDone }: { product?: Product; onDone: () => voi
               <button
                 type="button"
                 aria-label={t('form.removePhoto')}
-                onClick={() => set('image', '')}
+                onClick={() => {
+                  set('image', '')
+                  setUrlText('')
+                }}
                 className="absolute top-1.5 right-1.5 cursor-pointer rounded-full bg-white/90 p-1 text-gray-600 shadow hover:text-black"
               >
                 <X className="size-3.5" />
@@ -195,8 +211,11 @@ function ProductForm({ product, onDone }: { product?: Product; onDone: () => voi
           <input
             className={`${inputClass} mt-2 h-8 text-xs`}
             placeholder={t('form.orUrl')}
-            value={/^https?:/.test(form.image) ? form.image : ''}
-            onChange={(e) => set('image', e.target.value)}
+            value={urlText}
+            onChange={(e) => {
+              setUrlText(e.target.value)
+              set('image', e.target.value.trim())
+            }}
           />
         </div>
 
@@ -225,9 +244,10 @@ function ProductForm({ product, onDone }: { product?: Product; onDone: () => voi
               ariaLabel={t('form.category')}
               value={form.category}
               onChange={(v) => set('category', v)}
-              options={categories
-                .filter((c) => c !== 'Все')
-                .map((c) => ({ value: c, label: categoryLabel(lang, c) }))}
+              options={[
+                ...categories.filter((c) => c !== 'Все'),
+                ...(categories.includes(form.category) ? [] : [form.category]),
+              ].map((c) => ({ value: c, label: categoryLabel(lang, c) }))}
             />
           </div>
           <div>

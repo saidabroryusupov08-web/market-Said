@@ -279,6 +279,7 @@ export function MfaChallenge({ email }: { email: string }) {
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
+    if (busy) return
     if (code.length !== 6) return setError(t('login.enterCode'))
     setBusy(true)
     const problem = await verifyMfa(code)

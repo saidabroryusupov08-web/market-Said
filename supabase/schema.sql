@@ -229,6 +229,33 @@ $$;
 revoke all on function public.add_stock(bigint, jsonb) from public, anon;
 grant execute on function public.add_stock(bigint, jsonb) to authenticated;
 
+-- set_stock: admin qo'lda to'g'rilagan o'lchamlar (vals) yoziladi, clear'dagilar hisobdan chiqariladi.
+-- Faqat o'zgargan kalitlar tegiladi — boshqa o'lchamlarning shu payt buyurtma bilan kamaygan
+-- qoldig'i eski qiymat bilan ustidan yozilib ketmaydi.
+create or replace function public.set_stock(product_id bigint, vals jsonb, clear text[]) returns jsonb
+  language plpgsql security definer set search_path = public
+as $$
+declare
+  k text;
+  result jsonb;
+begin
+  if not public.is_admin() then
+    raise exception 'forbidden' using errcode = '42501';
+  end if;
+  for k in select jsonb_object_keys(vals) loop
+    if (vals ->> k)::int < 0 or (vals ->> k)::int > 99999 then
+      raise exception 'invalid amount' using errcode = '22023';
+    end if;
+  end loop;
+  update public.products set stock = (stock - coalesce(clear, '{}')) || vals where id = product_id
+    returning stock into result;
+  return result;
+end;
+$$;
+
+revoke all on function public.set_stock(bigint, jsonb, text[]) from public, anon;
+grant execute on function public.set_stock(bigint, jsonb, text[]) to authenticated;
+
 revoke all on function public.reserve_stock(jsonb) from public, anon;
 revoke all on function public.release_stock(jsonb) from public, anon;
 grant execute on function public.reserve_stock(jsonb) to authenticated, service_role;

@@ -121,9 +121,9 @@ function GlobalSearch() {
       if (results.length === 0) return
       const step = e.key === 'ArrowDown' ? 1 : -1
       setActive((i) => (i + step + results.length) % results.length)
-    } else if (e.key === 'Enter' && results[active]) {
+    } else if (e.key === 'Enter' && results.length > 0) {
       e.preventDefault()
-      go(results[active])
+      go(results[Math.min(active, results.length - 1)])
     }
   }
 

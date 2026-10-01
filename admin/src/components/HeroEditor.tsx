@@ -15,7 +15,7 @@ import { Modal, useToast } from './ui'
 // Do'kon bosh sahifasining sarlavhasi, matni va katta rasmi. Saqlash bosilgunicha hech narsa
 // yuklanmaydi; o'ngda saytda qanday ko'rinishi darhol ko'rsatiladi.
 function HeroEditor({ onClose }: { onClose: () => void }) {
-  const { siteSettings, saveSiteSettings, uploadImage } = useAdminData()
+  const { siteSettings, saveSiteSettings, uploadImage, removeImage } = useAdminData()
   const showToast = useToast()
   const { t } = useT()
   const [title, setTitle] = useState(siteSettings.heroTitle)
@@ -65,7 +65,10 @@ function HeroEditor({ onClose }: { onClose: () => void }) {
     }
     const error = await saveSiteSettings({ heroTitle: title, heroSubtitle: subtitle, heroImage })
     setSaving(false)
-    if (error) return showToast(error, 'error')
+    if (error) {
+      if (image instanceof Blob) await removeImage(heroImage)
+      return showToast(error, 'error')
+    }
     showToast(t('hero.saved'))
     onClose()
   }

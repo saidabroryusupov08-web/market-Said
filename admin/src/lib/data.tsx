@@ -70,8 +70,8 @@ type AdminDataValue = {
   markAllRead: () => Result
   deleteMessage: (id: number) => Result
   updateOrder: (id: number, changes: Partial<Pick<Order, 'status' | 'admin_note'>>) => Result
-  // ombordagi qoldiqni qo'lda belgilash (o'lcham -> dona)
-  saveStock: (id: number, stock: Record<string, number>) => Result
+  // ombordagi qoldiqni qo'lda to'g'rilash: faqat o'zgargan o'lchamlar (vals) va hisobdan chiqarilganlar (clear)
+  saveStock: (id: number, vals: Record<string, number>, clear: string[]) => Result
   // omborga kelgan tovar: o'lcham -> necha dona qo'shiladi (bazada atomik qo'shiladi)
   addStock: (id: number, amounts: Record<string, number>) => Result
   deleteOrder: (id: number) => Result
@@ -83,6 +83,21 @@ type AdminDataValue = {
 const MESSAGES_REFRESH_MS = 30_000
 
 const AdminDataContext = createContext<AdminDataValue | null>(null)
+
+// Supabase bir so'rovda ko'pi bilan 1000 qator beradi: hammasi bo'laklab olinadi
+// (aks holda buyurtmalar ko'paygach analitika va tushum jimgina kam ko'rsatardi)
+const PAGE = 1000
+async function fetchAll<T>(
+  page: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: { message: string; code?: string } | null }>,
+) {
+  const all: T[] = []
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await page(from, from + PAGE - 1)
+    if (error) return { data: null, error }
+    all.push(...(data ?? []))
+    if (!data || data.length < PAGE) return { data: all, error: null }
+  }
+}
 
 // Supabase xatosini admin tushunadigan matnga aylantirish
 function describe(error: { message: string; code?: string } | null): string | null {
@@ -112,37 +127,31 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const loadProducts = useCallback(async () => {
-    const { data, error } = await db
-      .from('products')
-      .select('*')
-      .order('created_at', { ascending: false })
+    const { data, error } = await fetchAll<ProductRow>((from, to) =>
+      db.from('products').select('*').order('created_at', { ascending: false }).order('id', { ascending: false }).range(from, to),
+    )
     if (error) return fail(error)
-    setProducts((data as ProductRow[]).map(fromRow))
+    setProducts(data!.map(fromRow))
     setProductsLoaded(true)
     return null
   }, [db, fail])
 
   const loadMessages = useCallback(async () => {
-    const { data, error } = await db
-      .from('messages')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(500)
+    const { data, error } = await fetchAll<Message>((from, to) =>
+      db.from('messages').select('*').order('created_at', { ascending: false }).order('id', { ascending: false }).range(from, to),
+    )
     if (error) return fail(error)
-    setMessages(data as Message[])
+    setMessages(data!)
     setMessagesLoaded(true)
-    setLoadError('')
     return null
   }, [db, fail])
 
   const loadOrders = useCallback(async () => {
-    const { data, error } = await db
-      .from('orders')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(500)
+    const { data, error } = await fetchAll<Order>((from, to) =>
+      db.from('orders').select('*').order('created_at', { ascending: false }).order('id', { ascending: false }).range(from, to),
+    )
     if (error) return fail(error)
-    setOrders(data as Order[])
+    setOrders(data!)
     setOrdersLoaded(true)
     return null
   }, [db, fail])
@@ -152,17 +161,22 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
     if (!error) setSiteSettings(settingsFromRow(data as SiteSettingsRow | null))
   }, [db])
 
+  // xato yozuvi faqat hammasi muvaffaqiyatli yuklangandan keyin olinadi
+  // (oldin bir ro'yxat kelishi boshqasining xatosini yashirib yuborardi)
   const reload = useCallback(async () => {
     const results = await Promise.all([loadProducts(), loadMessages(), loadOrders(), loadSettings()])
-    return results.find((r) => typeof r === 'string') ?? null
+    const error = results.find((r) => typeof r === 'string') ?? null
+    if (!error) setLoadError('')
+    return error
   }, [loadProducts, loadMessages, loadOrders, loadSettings])
 
   useEffect(() => {
     // effekt ichida to'g'ridan setState chaqirilmasligi uchun taymer orqali
     const first = setTimeout(reload, 0)
-    const timer = setInterval(() => {
-      loadMessages()
-      loadOrders()
+    const timer = setInterval(async () => {
+      const results = await Promise.all([loadMessages(), loadOrders()])
+      // aloqa tiklansa, eski "aloqa yo'q" yozuvi o'zi yo'qoladi
+      if (results.every((r) => r === null)) setLoadError('')
     }, MESSAGES_REFRESH_MS)
     return () => {
       clearTimeout(first)
@@ -172,7 +186,7 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
 
   // ----- mahsulotlar -----
   const createProduct = async (input: ProductInput) => {
-    const { data, error } = await db.from('products').insert(toRow(input)).select().single()
+    const { data, error } = await db.from('products').insert(toRow({ ...input, stock: undefined })).select().single()
     if (error) return describe(error)
     setProducts((prev) => [fromRow(data as ProductRow), ...prev])
     return null
@@ -182,7 +196,8 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
     const oldImage = products.find((p) => p.id === id)?.image
     const { data, error } = await db
       .from('products')
-      .update(toRow(input))
+      // stock faqat ombor funksiyalari orqali o'zgaradi: bu yerda eski nusxa yozilib ketmasin
+      .update(toRow({ ...input, stock: undefined }))
       .eq('id', id)
       .select()
       .single()
@@ -295,10 +310,10 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
     return null
   }
 
-  const saveStock = async (id: number, stock: Record<string, number>) => {
-    const { data, error } = await db.from('products').update({ stock }).eq('id', id).select().single()
+  const saveStock = async (id: number, vals: Record<string, number>, clear: string[]) => {
+    const { data, error } = await db.rpc('set_stock', { product_id: id, vals, clear })
     if (error) return describe(error)
-    setProducts((prev) => prev.map((p) => (p.id === id ? fromRow(data as ProductRow) : p)))
+    setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, stock: (data as Record<string, number>) ?? p.stock } : p)))
     return null
   }
 
@@ -320,10 +335,19 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
     return null
   }
 
+  // Hali jo'natilmagan (yangi / jarayonda) buyurtma o'chirilsa, uning mahsuloti omborga qaytadi.
+  // Jo'natilgan/yetkazilgan — tovar allaqachon chiqib ketgan; bekor qilingan — qaytarilgan.
   const deleteOrder = async (id: number) => {
+    const order = orders.find((o) => o.id === id)
     const { error } = await db.from('orders').delete().eq('id', id)
     if (error) return describe(error)
     setOrders((list) => list.filter((o) => o.id !== id))
+    if (order && (order.status === 'new' || order.status === 'processing')) {
+      const items = order.items.map((i) => ({ productId: i.productId, size: i.size, quantity: i.quantity }))
+      const { error: releaseError } = await db.rpc('release_stock', { items })
+      if (releaseError) return describe(releaseError)
+      await loadProducts()
+    }
     return null
   }
 

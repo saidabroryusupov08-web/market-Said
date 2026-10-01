@@ -10,6 +10,7 @@ import Login, { MfaChallenge, NotAdmin, NotConfigured, ResetPassword } from './p
 import Messages from './pages/Messages'
 import Orders from './pages/Orders'
 import Products from './pages/Products'
+import QrCodes from './pages/QrCodes'
 import Sales from './pages/Sales'
 import Stock from './pages/Stock'
 
@@ -42,6 +43,7 @@ function Gate() {
           <Route path="/sales" element={<Sales />} />
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/stock" element={<Stock />} />
+          <Route path="/qr" element={<QrCodes />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Layout>

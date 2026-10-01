@@ -9,6 +9,7 @@ import {
   Menu,
   Package,
   PackageCheck,
+  QrCode,
   RefreshCw,
   ShoppingBag,
   ShieldCheck,
@@ -76,6 +77,8 @@ function Sidebar({
     { to: '/analytics', label: t('nav.analytics'), Icon: BarChart3, badge: null },
     // omborda tugagan mahsulotlar soni — qizil (e'tibor talab qiladi)
     { to: '/stock', label: t('nav.stock'), Icon: Warehouse, badge: outOfStock || null, highlight: true },
+    // do'kon va admin manzillari uchun QR kodlar
+    { to: '/qr', label: t('nav.qr'), Icon: QrCode, badge: null },
   ]
 
   return (
@@ -199,6 +202,7 @@ const titles = {
   '/sales': 'nav.sales',
   '/analytics': 'nav.analytics',
   '/stock': 'nav.stock',
+  '/qr': 'nav.qr',
 } as const
 
 function Layout({ children }: { children: ReactNode }) {

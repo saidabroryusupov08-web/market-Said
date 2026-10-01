@@ -23,7 +23,11 @@ function Shell({ children }: { children: ReactNode }) {
   const { t, lang, setLang } = useT()
   return (
     <div className="relative flex min-h-screen items-center justify-center bg-gray-50 p-4">
-      <LanguageSwitcher lang={lang} setLang={setLang} label={t('common.language')} className="absolute top-4 right-4" />
+      {/* alohida burchak konteyneri: tugmaning ichki "relative" klassi "absolute"ni bosib qo'ymasin
+          (aks holda telefonda u kartochka yonida, ekran chetida qolib ketardi) */}
+      <div className="absolute top-[max(1rem,env(safe-area-inset-top))] right-4 z-10">
+        <LanguageSwitcher lang={lang} setLang={setLang} label={t('common.language')} />
+      </div>
       <div className="w-full max-w-sm">
         <div className="mb-6 flex flex-col items-center text-center">
           <LogoMark className="size-16" />
